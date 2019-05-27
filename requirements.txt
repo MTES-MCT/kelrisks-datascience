@@ -1,2 +1,5 @@
+ipython-sql==0.3.9
 jupyter==1.0.0
 pandas==0.24.2
+peewee==3.9.5
+psycopg2==2.8.2
