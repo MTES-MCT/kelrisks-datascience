@@ -1,0 +1,6 @@
+airflow-webserver.pid
+airflow.cfg
+airflow.db
+unittests.cfg
+logs
+dags/kelrisks

@@ -1,5 +1,8 @@
-# Environment variables
-env.sh
+# Data
+data
+
+# variables
+variables.json
 
 # VS Code
 .vscode
