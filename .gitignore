@@ -3,6 +3,7 @@ data
 
 # variables
 variables.json
+dev.env
 
 # VS Code
 .vscode

@@ -1,30 +1,36 @@
 
-import os
-from peewee import PostgresqlDatabase
+from unittest import TestCase
+from ..connections import get_default_database, get_test_database, test_db_name
+from ..models import get_models
 
 
-class TestDatabaseNotConfigured(Exception):
-
-    def __init__(self):
-        message = "You should set env variables TEST_POSTGRES_DB, " + \
-            "TEST_POSTGRES_HOST, TEST_POSTGRES_USER, TEST_POSTGRES_PWD " + \
-            "and TEST_POSTGRES_PORT"
-        Exception.__init__(message)
-
-try:
-    POSTGRES_DB = os.environ['TEST_POSTGRES_DB']
-    POSTGRES_HOST = os.environ['TEST_POSTGRES_HOST']
-    POSTGRES_USER = os.environ['TEST_POSTGRES_USER']
-    POSTGRES_PWD = os.environ['TEST_POSTGRES_PWD']
-    POSTGRES_PORT = os.environ['TEST_POSTGRES_PORT']
-except KeyError:
-    raise TestDatabaseNotConfigured()
+default_db = get_default_database()
 
 
-def get_test_db():
-    return PostgresqlDatabase(
-        POSTGRES_DB,
-        host=POSTGRES_HOST,
-        user=POSTGRES_USER,
-        password=POSTGRES_PWD,
-        port=POSTGRES_PORT)
+def setup_database():
+    """ Create the test database """
+    conn = default_db._connect()
+    conn.autocommit = True
+    cursor = conn.cursor()
+    cursor.execute('DROP DATABASE IF EXISTS %s' % test_db_name)
+    cursor.execute('CREATE DATABASE %s' % test_db_name)
+
+
+def teardown_database():
+    """ Destroy the test database """
+    conn = default_db._connect()
+    conn.autocommit = True
+    cursor = conn.cursor()
+    cursor.execute('DROP DATABASE IF EXISTS %s' % test_db_name)
+
+
+class BaseTestCase(TestCase):
+
+    def setUp(self):
+        self.models = get_models()
+        self.db = get_test_database()
+        self.db.bind(self.models.values())
+        self.db.create_tables(self.models.values())
+
+    def tearDown(self):
+        self.db.drop_tables(self.models.values())

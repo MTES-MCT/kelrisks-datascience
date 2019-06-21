@@ -13,10 +13,10 @@ from .models import S3IC_source, S3IC_geocoded, S3IC_with_geog, \
 from .utils import is_float
 
 
-class PostgresTransformer(object):
+class PeeweeTransformer(object):
     """
     Base class for applying a transformation
-    between two PostgreSQL tables
+    between two SQL tables using Peewee
     """
 
     def __init__(self, db, in_model, out_model):
@@ -27,7 +27,7 @@ class PostgresTransformer(object):
         self.db.bind(self.models)
 
     def select(self):
-        return list(self.in_model.select().limit(10).dicts())
+        return list(self.in_model.select().dicts())
 
     def load(self, data, append=False):
         if not append:
@@ -46,7 +46,24 @@ class PostgresTransformer(object):
         self.load(transformed, append=append)
 
 
-class Geocode(PostgresTransformer):
+class SQLTransformer(object):
+
+    def __init__(self, db, in_model, out_model):
+        self.db = db
+        self.in_model = in_model
+        self.out_model = out_model
+        self.models = [self.in_model, self.out_model]
+        self.db.bind(self.models)
+
+    def sql(self):
+        raise NotImplementedError()
+
+    def transform_load(self):
+        self.out_model.drop_table()
+        self.db.execute_sql(self.sql())
+
+
+class Geocode(PeeweeTransformer):
 
     def __init__(self, db):
         in_model = S3IC_source
@@ -75,7 +92,41 @@ class Geocode(PostgresTransformer):
             return data
 
 
-class AddGeography(PostgresTransformer):
+# class AddGeography(PeeweeTransformer):
+
+#     def __init__(self, db):
+#         in_model = S3IC_geocoded
+#         out_model = S3IC_with_geog
+#         super(AddGeography, self).__init__(
+#             db, in_model, out_model)
+
+#     def transform(self, data):
+#         """ create geography fields from x, y data """
+
+#         # Input fields
+#         X = self.in_model.x.column_name
+#         Y = self.in_model.y.column_name
+#         GEOCODED_X = self.in_model.geocoded_x.column_name
+#         GEOCODED_Y = self.in_model.geocoded_y.column_name
+
+#         # Output fields
+#         GEOG = self.out_model.geog.column_name
+#         GEOCODED_GEOG = self.out_model.geocoded_geog.column_name
+
+#         for record in data:
+#             x = record[X]
+#             y = record[Y]
+#             geocoded_x = record[GEOCODED_X]
+#             geocoded_y = record[GEOCODED_Y]
+#             if is_float(x) and is_float(y):
+#                 record[GEOG] = (x, y)
+#             if is_float(geocoded_x) and is_float(geocoded_y):
+#                 record[GEOCODED_GEOG] = (geocoded_x, geocoded_y)
+
+#         return data
+
+
+class AddGeography(SQLTransformer):
 
     def __init__(self, db):
         in_model = S3IC_geocoded
@@ -83,33 +134,19 @@ class AddGeography(PostgresTransformer):
         super(AddGeography, self).__init__(
             db, in_model, out_model)
 
-    def transform(self, data):
-        """ create geography fields from x, y data """
-
-        # Input fields
-        X = self.in_model.x.column_name
-        Y = self.in_model.y.column_name
-        GEOCODED_X = self.in_model.geocoded_x.column_name
-        GEOCODED_Y = self.in_model.geocoded_y.column_name
-
-        # Output fields
-        GEOG = self.out_model.geog.column_name
-        GEOCODED_GEOG = self.out_model.geocoded_geog.column_name
-
-        for record in data:
-            x = record[X]
-            y = record[Y]
-            geocoded_x = record[GEOCODED_X]
-            geocoded_y = record[GEOCODED_Y]
-            if is_float(x) and is_float(y):
-                record[GEOG] = (x, y)
-            if is_float(geocoded_x) and is_float(geocoded_y):
-                record[GEOCODED_GEOG] = (geocoded_x, geocoded_y)
-
-        return data
+    def sql(self):
+        query = """
+            INSERT INTO %s
+                SELECT
+                    *,
+                    ST_Transform(ST_SetSRID(fn.ST_MakePoint(x, y), 2154), 4326),
+                    ST_Transform(ST_SetSRID(fn.ST_MakePoint(geocoded_x, geocoded_y), 2154), 4326)
+                FROM %s
+            """ % (self.out_model.table_name, self.in_model.table_name)
+        return query
 
 
-class Prepare(PostgresTransformer):
+class Prepare(PeeweeTransformer):
 
     def __init__(self, db):
         in_model = S3IC_with_geog

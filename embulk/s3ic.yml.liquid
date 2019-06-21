@@ -1,6 +1,6 @@
 in:
   type: file
-  path_prefix: {{ env.EMBULK_FILEPREFIX }}
+  path_prefix: {{ env.INPUT }}
   parser:
     charset: UTF-8
     newline: CRLF
@@ -31,12 +31,12 @@ out:
   type: postgresql
   host: {{ env.POSTGRES_HOST }}
   user: {{ env.POSTGRES_USER }}
-  password: {{ env.POSTGRES_PWD }}
+  password: {{ env.POSTGRES_PASSWORD }}
   port: {{ env.POSTGRES_PORT }}
-  ssl: true
-  database: {{ env.POSTGRES_DATABASE }}
-  table: s3ic_source
-  schema: etl
+  ssl: {{ env.POSTGRES_SSL_ON }}
+  database: {{ env.POSTGRES_DB }}
+  table: {{ env.OUTPUT }}
+  schema: {{ env.POSTGRES_SCHEMA }}
   options: {loglevel: 2}
   mode: replace
   column_options:
