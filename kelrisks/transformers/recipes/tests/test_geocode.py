@@ -38,3 +38,4 @@ class GeocodeTestCase(TestCase):
             postcode='postcode')
 
         self.assertEqual(len(geocoded), 2)
+

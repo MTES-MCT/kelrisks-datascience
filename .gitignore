@@ -4,6 +4,7 @@ data
 # variables
 variables.json
 dev.env
+prod.env
 
 # VS Code
 .vscode

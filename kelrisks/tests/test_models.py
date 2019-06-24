@@ -49,3 +49,6 @@ class PointFieldTestCase(TestCase):
         instance = self.model(point=point)
         instance.save()
         self.assertEqual(instance.point, None)
+        data = self.model.select().dicts()
+        record = data[0]['point']
+        self.assertIsNone(record)

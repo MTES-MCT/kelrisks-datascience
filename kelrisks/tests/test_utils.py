@@ -2,7 +2,7 @@
 import io
 from unittest import TestCase
 
-from ..utils import csv2dicts, dicts2csv
+from ..utils import csv2dicts, dicts2csv, chunks
 
 
 class UtilsTestCase(TestCase):
@@ -30,6 +30,15 @@ hamburger,100,mediocre"""
                    '"apple","10","good"\n' \
                    '"hamburger","100","mediocre"\n'
         self.assertEqual(csv.read(), expected)
+
+
+    def test_chunks(self):
+        array = [1, 2, 3, 4, 5, 6, 7]
+        chunked = list(chunks(array, 2))
+        expected = [[1, 2], [3, 4], [5, 6], [7]]
+        self.assertEqual(chunked, expected)
+
+
 
 
 

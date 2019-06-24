@@ -8,7 +8,9 @@ from airflow.operators.python_operator import PythonOperator
 
 import helpers
 
-from kelrisks.transformers.s3ic import GeocodeTransformer
+from kelrisks.transformers.s3ic import GeocodeTransformer, \
+    CreateGeographyTransformer, CreateCentroideCommuneTransformer, \
+    StagingTransformer
 from kelrisks.embulk import load_s3ic
 
 
@@ -25,7 +27,6 @@ load_s3ic = PythonOperator(
     python_callable=load_s3ic,
     dag=dag)
 
-
 geocode_transformer = GeocodeTransformer()
 
 geocode = PythonOperator(
@@ -33,21 +34,27 @@ geocode = PythonOperator(
     python_callable=geocode_transformer.transform_load,
     dag=dag)
 
-# add_geography_transformer = AddGeography(peewee_database)
+create_geo_transformer = CreateGeographyTransformer()
 
-# add_geography = PythonOperator(
-#     task_id='add_geography',
-#     python_callable=add_geography_transformer.transform_load,
-#     dag=dag)
+create_geo = PythonOperator(
+    task_id='create_geo',
+    python_callable=create_geo_transformer.transform_load,
+    dag=dag)
 
-# prepare_transformer = Prepare(peewee_database)
+create_centroide_commune_transformer = CreateCentroideCommuneTransformer()
 
-# prepare = PythonOperator(
-#     task_id='prepare',
-#     python_callable=prepare_transformer.transform_load,
-#     dag=dag)
+create_centroide_commune = PythonOperator(
+    task_id='create_centroide_commune',
+    python_callable=create_centroide_commune_transformer.transform_load,
+    dag=dag)
 
-# load >> geocode >>
-#add_geography >> prepare
+staging_transformer = StagingTransformer()
 
-load_s3ic >> geocode
+stage = PythonOperator(
+    task_id='stage',
+    python_callable=staging_transformer.transform_load,
+    dag=dag)
+
+
+load_s3ic >> geocode >> create_geo >> \
+    create_centroide_commune >> stage
