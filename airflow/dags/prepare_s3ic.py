@@ -10,7 +10,7 @@ import helpers
 
 from kelrisks.transformers.s3ic import GeocodeTransformer, \
     CreateGeographyTransformer, CreateCentroideCommuneTransformer, \
-    StagingTransformer
+    StagingTransformer, DeployTransformer
 from kelrisks.embulk import load_s3ic
 
 
@@ -55,6 +55,13 @@ stage = PythonOperator(
     python_callable=staging_transformer.transform_load,
     dag=dag)
 
+deploy_transformer = DeployTransformer()
+
+deploy = PythonOperator(
+    task_id='deploy',
+    python_callable=deploy_transformer.transform_load,
+    dag=dag)
+
 
 load_s3ic >> geocode >> create_geo >> \
-    create_centroide_commune >> stage
+    create_centroide_commune >> stage >> deploy

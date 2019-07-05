@@ -11,10 +11,22 @@ db = get_database()
 
 
 class BaseModel(Model):
-
+    """
+    Base model for table in etl schema
+    """
     class Meta:
         database = db
         schema = 'etl'
+
+
+class BaseProdModel(Model):
+    """
+    Base model for table in kelrisks schema
+    """
+    class Meta:
+        database = db
+        schema = 'kelrisks'
+
 
 Point = namedtuple('Point', ['x', 'y', 'srid'])
 
@@ -110,9 +122,15 @@ class S3IC_with_centroide_commune(BaseModel, CentroideCommuneFieldsMixin,
 
 
 class S3IC_prepared(BaseModel, CentroideCommuneFieldsMixin,
-                                  GeocodedFieldsMixin, GeographyFieldsMixin,
-                                  BaseFieldsMixin):
+                    GeocodedFieldsMixin, GeographyFieldsMixin,
+                    BaseFieldsMixin):
     """ staging table """
+    pass
+
+
+class S3IC(BaseProdModel, CentroideCommuneFieldsMixin, GeocodedFieldsMixin,
+           GeographyFieldsMixin, BaseFieldsMixin):
+    """ prod table """
     pass
 
 
@@ -122,5 +140,6 @@ def get_models():
         's3ic_geocoded': S3IC_geocoded,
         's3ic_with_geog': S3IC_with_geog,
         's3ic_with_centroide_commune': S3IC_with_centroide_commune,
-        's3ic_prepared': S3IC_prepared
+        's3ic_prepared': S3IC_prepared,
+        's3ic': S3IC
     }

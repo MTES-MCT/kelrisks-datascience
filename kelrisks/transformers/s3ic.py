@@ -121,10 +121,24 @@ class CreateCentroideCommuneTransformer(PostgresPythonTransformer):
 class StagingTransformer(PostgresPythonTransformer):
     """
     Dummy transformer that copy data to the staging table
+    TODO run some tests on the table
     """
 
     input_table = 's3ic_with_centroide_commune'
     output_table = 's3ic_prepared'
+
+    def transform(self, data):
+        return data
+
+
+class DeployTransformer(PostgresPythonTransformer):
+    """
+    Dummy transformer that copy data from the staging table
+    to the prod table in schema kelrisks
+    """
+
+    input_table = 's3ic_prepared'
+    output_table = 's3ic'
 
     def transform(self, data):
         return data
