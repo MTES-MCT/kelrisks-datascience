@@ -22,20 +22,11 @@ class PostgresPythonTransformer(object):
     def select(self):
         return self.input_model.select().dicts()
 
-    # def load(self, data):
-    #     self.output_model.drop_table()
-    #     self.output_model.create_table()
-    #     instances = [self.output_model(**record) for record in data]
-    #     self.output_model.bulk_create(instances, batch_size=100)
-
     def load(self, data):
         self.output_model.drop_table()
         self.output_model.create_table()
-        for record in data:
-            try:
-                self.output_model.create(**record)
-            except:
-                print(record)
+        instances = [self.output_model(**record) for record in data]
+        self.output_model.bulk_create(instances, batch_size=100)
 
     def transform(self, data):
         raise NotImplementedError()
