@@ -1,7 +1,7 @@
 
 from .recipes.geocode import geocode_bulk
 from .base import PostgresPythonTransformer, PostgresSQLTransformer
-from ..models import Point
+from ..models.base import Point
 
 
 class GeocodeTransformer(PostgresPythonTransformer):

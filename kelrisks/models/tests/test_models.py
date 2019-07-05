@@ -3,8 +3,8 @@
 from unittest import TestCase
 from peewee import *
 
-from ..models import Point, PointField
-from ..connections import get_test_database
+from ..base import Point, PointField
+from ...connections import get_test_database
 
 
 class PointFieldTestCase(TestCase):

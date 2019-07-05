@@ -12,6 +12,8 @@ def prepare_db(function):
 
     def wrapper():
         db = function()
+        create_schema_stmt = 'CREATE SCHEMA IF NOT EXISTS kelrisks'
+        db.execute_sql(create_schema_stmt)
         create_schema_stmt = 'CREATE SCHEMA IF NOT EXISTS etl'
         db.execute_sql(create_schema_stmt)
         db.execute_sql('CREATE EXTENSION IF NOT EXISTS postgis')

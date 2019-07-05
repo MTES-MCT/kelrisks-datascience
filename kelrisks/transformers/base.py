@@ -43,7 +43,16 @@ class PostgresSQLTransformer(object):
     between two Postgres tables using SQL
     """
 
+    @property
+    def input_model(self):
+        return models[self.input_table]
+
+    @property
+    def output_model(self):
+        return models[self.output_table]
+
     def transform_load(self):
-        sql = self.query()
+        self.output_model.drop_table()
+        self.output_model.create_table()
         db = get_database()
-        db.execute_sql(sql)
+        db.execute_sql(self.sql)

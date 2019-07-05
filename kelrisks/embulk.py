@@ -41,3 +41,7 @@ def embulk_run(filename, input, output):
 
 def load_s3ic():
     embulk_run('s3ic', 's3ic', 's3ic_source')
+
+
+def load_sis():
+    embulk_run('sis', 'sis', 'sis_source')

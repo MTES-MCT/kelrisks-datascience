@@ -4,7 +4,7 @@ from ...tests.helpers import BaseTestCase
 
 from ..s3ic import GeocodeTransformer, CreateGeographyTransformer, \
     CreateCentroideCommuneTransformer
-from ...models import Point
+from ...models.base import Point
 
 
 class GeocodeTransformerTestCase(BaseTestCase):

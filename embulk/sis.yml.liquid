@@ -1,0 +1,55 @@
+in:
+  type: file
+  path_prefix: ./embulk/data/sis/sis.csv
+  parser:
+    charset: UTF-8
+    newline: CRLF
+    type: csv
+    delimiter: ','
+    quote: '"'
+    escape: '"'
+    trim_if_not_quoted: false
+    skip_header_lines: 1
+    allow_extra_columns: false
+    allow_optional_columns: false
+    columns:
+    - {name: id_sis, type: string}
+    - {name: numero_affichage, type: string}
+    - {name: numero_basol, type: string}
+    - {name: nom, type: string}
+    - {name: adresse, type: string}
+    - {name: lieu_dit, type: string}
+    - {name: code_insee, type: string}
+    - {name: nom_commune, type: string}
+    - {name: code_departement, type: string}
+    - {name: nom_departement, type: string}
+    - {name: surface_m2, type: long}
+    - {name: x, type: double}
+    - {name: y, type: double}
+    - {name: geom, type: text}
+out:
+  type: postgresql
+  host: {{ env.POSTGRES_HOST }}
+  user: {{ env.POSTGRES_USER }}
+  password: {{ env.POSTGRES_PASSWORD }}
+  port: {{ env.POSTGRES_PORT }}
+  ssl: {{ env.POSTGRES_SSL_ON }}
+  database: {{ env.POSTGRES_DB }}
+  table: {{ env.OUTPUT }}
+  schema: {{ env.POSTGRES_SCHEMA }}
+  options: {loglevel: 2}
+  mode: replace
+  column_options:
+    id_sis = {type: VARCHAR(255)}
+    numero_affichage = {type: VARCHAR(255)}
+    numero_basol = {type: VARCHAR(255)}
+    adresse = {type: TEXT}
+    lieu_dit = {type: VARCHAR(255)}
+    code_insee = {type: VARCHAR(255)}
+    nom_commune = {type: VARCHAR(255)}
+    code_departement = {type: VARCHAR(255)}
+    nom_departement = {type: VARCHAR(255)}
+    surface_m2 = {type: REAL}
+    x = {type: DOUBLE PRECISION}
+    y = {type: DOUBLE PRECISION}
+    geom = {type: TEXT}
