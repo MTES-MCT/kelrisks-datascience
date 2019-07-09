@@ -83,7 +83,8 @@ class CreateGeographyTransformerTestCase(BaseTestCase):
             'geocoded_longitude': 6.14686,
             'geocoded_score': 0.91,
             'geocoded_precision': 'housenumber',
-            'geocoded_label': '6 Rue Albert 1er 54600 Villers-lès-Nancy'}
+            'geocoded_label': '6 Rue Albert 1er 54600 Villers-lès-Nancy',
+            'version': None}
 
         transformer.input_model.create(**data)
 
@@ -129,8 +130,8 @@ class CreateCentroideCommuneTransformerTestCase(BaseTestCase):
             'geocoded_precision': 'housenumber',
             'geocoded_label': '6 Rue Albert 1er 54600 Villers-lès-Nancy',
             'geog': Point(x=2.1628494585474103, y=48.730807832646896, srid=4326),
-            'geocoded_geog': Point(x=6.14686, y=48.6704, srid=4326)
-            }
+            'geocoded_geog': Point(x=6.14686, y=48.6704, srid=4326),
+            'version': None}
 
         transformer.input_model.create(**data)
 

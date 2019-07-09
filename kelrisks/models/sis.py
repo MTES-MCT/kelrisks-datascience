@@ -17,6 +17,7 @@ class BaseFieldMixin(Model):
     surface_m2 = FloatField(null=True)
     x = DoubleField(null=True)
     y = DoubleField(null=True)
+    version = IntegerField(null=True)
 
 
 class SIS_source(BaseModel, BaseFieldMixin):
@@ -30,13 +31,17 @@ class GeographyMixin(Model):
     geog_centroid = PointField(4326)
 
 
-class SIS_with_geog(BaseModel, GeographyMixin, BaseFieldMixin):
+class SIS_with_geog(BaseModel, GeographyMixin,
+                    BaseFieldMixin):
     pass
 
 
-class SIS_prepared(BaseModel, GeographyMixin, BaseFieldMixin):
-    pass
+class SIS_prepared(BaseModel, GeographyMixin,
+                   BaseFieldMixin):
+
+    id = BigAutoField(primary_key=True)
 
 
-class SIS(BaseProdModel, GeographyMixin, BaseFieldMixin):
-    pass
+class SIS(BaseProdModel, SIS_prepared):
+
+    id = BigAutoField(primary_key=True)

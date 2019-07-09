@@ -22,6 +22,17 @@ class BaseFieldsMixin(Model):
     precision = CharField(null=True)
 
 
+class VersionMixin(Model):
+    """ Add version for compatibility with Hibernate"""
+
+    version = IntegerField(null=True)
+
+
+class BigIntegerSerialFieldMixin(Model):
+    """ Use BigInteger for ids """
+    id = BigAutoField(primary_key=True)
+
+
 class S3IC_source(BaseModel, BaseFieldsMixin):
     """ s3ic data from source files """
 
@@ -38,7 +49,8 @@ class GeocodedFieldsMixin(Model):
     geocoded_label = TextField(null=True)
 
 
-class S3IC_geocoded(BaseModel, GeocodedFieldsMixin, BaseFieldsMixin):
+class S3IC_geocoded(BaseModel, GeocodedFieldsMixin,
+                    BaseFieldsMixin):
     """ s3ic with geoodage of addresses when possible """
     pass
 
@@ -67,14 +79,15 @@ class S3IC_with_centroide_commune(BaseModel, CentroideCommuneFieldsMixin,
     pass
 
 
-class S3IC_prepared(BaseModel, CentroideCommuneFieldsMixin,
+class S3IC_prepared(BaseModel, VersionMixin, CentroideCommuneFieldsMixin,
                     GeocodedFieldsMixin, GeographyFieldsMixin,
                     BaseFieldsMixin):
     """ staging table """
-    pass
+
+    id = BigAutoField(primary_key=True)
 
 
-class S3IC(BaseProdModel, CentroideCommuneFieldsMixin, GeocodedFieldsMixin,
-           GeographyFieldsMixin, BaseFieldsMixin):
+class S3IC(BaseProdModel, S3IC_prepared):
     """ prod table """
-    pass
+
+    id = BigAutoField(primary_key=True)
