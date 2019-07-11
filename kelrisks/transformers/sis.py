@@ -37,7 +37,7 @@ SELECT
     surface_m2,
     x,
     y,
-    ST_GeomFromGeoJSON(CAST(geom as TEXT)) as geog,
+    ST_SetSRID(ST_GeomFromGeoJSON(CAST(geom as TEXT)), 4326) as geog,
     ST_SetSRID(ST_Point(x, y), 4326) as geog_centroid
 from etl.sis_source
 """
