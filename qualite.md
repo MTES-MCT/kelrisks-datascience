@@ -103,6 +103,9 @@
             <li>2227 dont la précision est inconnue</li>
           </ul>
         </li>
+        <li>
+          5058 références cadastrales
+        </li>
       </ul>
     </td>
     <td>100% des sites géoréférencées</td>
