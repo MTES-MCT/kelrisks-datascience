@@ -1,6 +1,6 @@
 from peewee import *
 
-from .base import BaseModel, BaseProdModel, GeometryField, PointField
+from .base import BaseModel, BaseProdModel, GeometryField
 
 
 class BaseFieldMixin(Model):
@@ -17,6 +17,11 @@ class BaseFieldMixin(Model):
     surface_m2 = FloatField(null=True)
     x = DoubleField(null=True)
     y = DoubleField(null=True)
+
+
+class VersionMixin(Model):
+    """ Add version for compatibility with Hibernate"""
+
     version = IntegerField(null=True)
 
 
@@ -24,11 +29,14 @@ class SIS_source(BaseModel, BaseFieldMixin):
 
     geom = TextField()
 
+    class Meta:
+        primary_key = False
+
 
 class GeographyMixin(Model):
 
-    geog = GeometryField()
-    geog_centroid = PointField(4326)
+    geog = GeometryField(4326, null=True)
+    geog_centroid = GeometryField(4326, null=True)
 
 
 class SIS_with_geog(BaseModel, GeographyMixin,
@@ -36,7 +44,7 @@ class SIS_with_geog(BaseModel, GeographyMixin,
     pass
 
 
-class SIS_prepared(BaseModel, GeographyMixin,
+class SIS_prepared(BaseModel, VersionMixin, GeographyMixin,
                    BaseFieldMixin):
 
     id = BigAutoField(primary_key=True)

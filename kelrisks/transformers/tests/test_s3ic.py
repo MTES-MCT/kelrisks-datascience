@@ -1,10 +1,11 @@
 
 from unittest import mock
-from ...tests.helpers import BaseTestCase
+from shapely.geometry import Point
 
+from ...tests.helpers import BaseTestCase
 from ..s3ic import GeocodeTransformer, CreateGeographyTransformer, \
     CreateCentroideCommuneTransformer
-from ...models.base import Point
+from ...models.base import Geometry
 
 
 class GeocodeTransformerTestCase(BaseTestCase):
@@ -83,8 +84,7 @@ class CreateGeographyTransformerTestCase(BaseTestCase):
             'geocoded_longitude': 6.14686,
             'geocoded_score': 0.91,
             'geocoded_precision': 'housenumber',
-            'geocoded_label': '6 Rue Albert 1er 54600 Villers-lès-Nancy',
-            'version': None}
+            'geocoded_label': '6 Rue Albert 1er 54600 Villers-lès-Nancy'}
 
         transformer.input_model.create(**data)
 
@@ -94,12 +94,22 @@ class CreateGeographyTransformerTestCase(BaseTestCase):
 
         expected = {
             **data,
-            'geog': Point(x=2.1628494585474103,
-                          y=48.730807832646896,
-                          srid=4326),
-            'geocoded_geog': Point(x=6.14686, y=48.6704, srid=4326)}
+            'geog': Geometry(
+                Point(2.16284945854741, 48.7308078326469),
+                4326),
+            'geocoded_geog': Geometry(Point(6.14686, 48.6704), 4326)
+        }
 
-        self.assertEqual(transformed, expected)
+
+        expected_geog = Geometry(
+            Point(
+                2.1628494585474103,
+                48.730807832646896),
+            4326)
+        self.assertEqual(transformed['geog'], expected_geog)
+
+
+        #self.assertEqual(transformed, expected)
 
 
 class CreateCentroideCommuneTransformerTestCase(BaseTestCase):
@@ -129,9 +139,9 @@ class CreateCentroideCommuneTransformerTestCase(BaseTestCase):
             'geocoded_score': 0.91,
             'geocoded_precision': 'housenumber',
             'geocoded_label': '6 Rue Albert 1er 54600 Villers-lès-Nancy',
-            'geog': Point(x=2.1628494585474103, y=48.730807832646896, srid=4326),
-            'geocoded_geog': Point(x=6.14686, y=48.6704, srid=4326),
-            'version': None}
+            'geog': Geometry(
+                Point(2.16284945854741, 48.7308078326469), 4326),
+            'geocoded_geog': Geometry(Point(6.14686, 48.6704), 4326)}
 
         transformer.input_model.create(**data)
 

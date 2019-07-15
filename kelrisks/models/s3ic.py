@@ -1,6 +1,6 @@
 from peewee import *
 
-from .base import BaseModel, BaseProdModel, PointField
+from .base import BaseModel, BaseProdModel, GeometryField
 
 
 class BaseFieldsMixin(Model):
@@ -57,8 +57,8 @@ class S3IC_geocoded(BaseModel, GeocodedFieldsMixin,
 
 class GeographyFieldsMixin(Model):
 
-    geog = PointField(4326, null=True)
-    geocoded_geog = PointField(4326, null=True)
+    geog = GeometryField(4326, null=True)
+    geocoded_geog = GeometryField(4326, null=True)
 
 
 class S3IC_with_geog(BaseModel, GeographyFieldsMixin, GeocodedFieldsMixin,

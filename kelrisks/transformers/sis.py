@@ -1,46 +1,41 @@
 
+import json
+import geojson
+from shapely.geometry import Point, shape
+
 from .base import PostgresPythonTransformer, PostgresSQLTransformer
+from ..models.base import Geometry
 
 
-class CreateGeographyTransformer(PostgresSQLTransformer):
+class CreateGeographyTransformer(PostgresPythonTransformer):
 
     input_table = 'sis_source'
-    output_table = 'sis'
+    output_table = 'sis_with_geog'
 
-    sql = """
-INSERT INTO kelrisks.sis (
-    id_sis,
-    numero_affichage,
-    numero_basol,
-    adresse,
-    lieu_dit,
-    code_insee,
-    nom_commune,
-    code_departement,
-    nom_departement,
-    surface_m2,
-    x,
-    y,
-    geog,
-    geog_centroid
-)
-SELECT
-    id_sis,
-    numero_affichage,
-    numero_basol,
-    adresse,
-    lieu_dit,
-    code_insee,
-    nom_commune,
-    code_departement,
-    nom_departement,
-    surface_m2,
-    x,
-    y,
-    ST_SetSRID(ST_GeomFromGeoJSON(CAST(geom as TEXT)), 4326) as geog,
-    ST_SetSRID(ST_Point(x, y), 4326) as geog_centroid
-from etl.sis_source
-"""
+    def transform(self, data):
+        """ create geometry fields """
+
+        X = self.input_model.x.column_name
+        Y = self.input_model.y.column_name
+        GEOM = self.input_model.geom.column_name
+
+        GEOG = self.output_model.geog.column_name
+        GEOG_CENTROID = self.output_model.geog_centroid.column_name
+
+        for record in data:
+            x = record[X]
+            y = record[Y]
+
+            record[GEOG_CENTROID] = Geometry(Point(x, y), 4326)
+
+            # convert from geojson to shapely.Geometry
+            g = eval(record[GEOM])
+            g = json.dumps(g)
+            g = geojson.loads(g)
+            g = shape(g)
+            record[GEOG] = Geometry(g, 4326)
+
+        return data
 
 
 class StagingTransformer(PostgresPythonTransformer):
@@ -49,7 +44,7 @@ class StagingTransformer(PostgresPythonTransformer):
     TODO run some tests on the table
     """
 
-    input_table = 'sis_with_geography'
+    input_table = 'sis_with_geog'
     output_table = 'sis_prepared'
 
     def transform(self, data):

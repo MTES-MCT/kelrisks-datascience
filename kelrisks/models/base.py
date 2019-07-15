@@ -1,7 +1,10 @@
 from collections import namedtuple
+import json
+
 from peewee import *
 
 from shapely import wkb
+
 
 from ..connections import get_database
 
@@ -27,38 +30,33 @@ class BaseProdModel(Model):
         schema = 'kelrisks'
 
 
-Point = namedtuple('Point', ['x', 'y', 'srid'])
+Geometry = namedtuple('Geometry', ['geom', 'srid'])
 
 
-class PointField(Field):
+class GeometryField(Field):
+    """
+    Generic Geometry field that maps to
+    shapely geometry types
+    """
 
     def __init__(self, srid, *args, **kwargs):
         self.srid = srid
-        super(PointField, self).__init__(*args, **kwargs)
+        super(GeometryField, self).__init__(*args, **kwargs)
 
     field_type = 'geometry'
 
     def db_value(self, value):
         if not value:
             return None
-        x = value.x
-        y = value.y
         srid = value.srid
-        point = fn.ST_SetSRID(fn.ST_MakePoint(x, y), srid)
+        geom = fn.ST_GeomFromEWKB(wkb.dumps(value.geom))
+        geom = fn.ST_SetSRID(geom, srid)
         if srid != self.srid:
-            point = fn.ST_Transform(point, self.srid)
-        return point
+            geom = fn.ST_Transform(geom, self.srid)
+        return geom
 
     def python_value(self, value):
         if not value:
             return None
-        point = wkb.loads(value, hex=True)
-        return Point(point.x, point.y, self.srid)
-
-
-class GeometryField(Field):
-
-    def __init__(self, *args, **kwargs):
-        super(GeometryField, self).__init__(*args, **kwargs)
-
-    field_type = 'geometry'
+        geom = wkb.loads(value, hex=True)
+        return Geometry(geom, self.srid)

@@ -1,7 +1,9 @@
 
+from shapely.geometry import Point
+
 from .recipes.geocode import geocode_bulk
 from .base import PostgresPythonTransformer, PostgresSQLTransformer
-from ..models.base import Point
+from ..models.base import Geometry
 
 
 class GeocodeTransformer(PostgresPythonTransformer):
@@ -83,10 +85,12 @@ class CreateGeographyTransformer(PostgresPythonTransformer):
             lambert_93 = 2154
             wgs_84 = 4326
 
-            record[GEOG] = Point(record[X], record[Y], lambert_93)
-            record[GEOCODED_GEOG] = Point(record[GEOCODED_LONGITUDE],
-                                          record[GEOCODED_LATITUDE],
-                                          wgs_84)
+            point = Point(record[X], record[Y])
+            point_geocoded = Point(record[GEOCODED_LONGITUDE],
+                                   record[GEOCODED_LATITUDE])
+
+            record[GEOG] = Geometry(point, lambert_93)
+            record[GEOCODED_GEOG] = Geometry(point_geocoded, wgs_84)
 
         return data
 

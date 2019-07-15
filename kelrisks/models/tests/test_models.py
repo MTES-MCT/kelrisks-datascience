@@ -1,19 +1,23 @@
 
 
 from unittest import TestCase
-from peewee import *
+import json
 
-from ..base import Point, PointField
+from peewee import *
+from shapely.geometry import Point, MultiPolygon
+
+from ..base import Geometry, GeometryField
+
 from ...connections import get_test_database
 
 
-class PointFieldTestCase(TestCase):
+class GeometryFieldTestCase(TestCase):
 
     def setUp(self):
 
         # define a test model with a PointField in srid 4326
         class TestModel(Model):
-            point = PointField(4326, null=True)
+            geom = GeometryField(4326, null=True)
 
             class Meta:
                 database = get_test_database()
@@ -24,31 +28,55 @@ class PointFieldTestCase(TestCase):
     def tearDown(self):
         self.model.drop_table()
 
-    def test_to_db_value_to_python_value(self):
+    def test_to_db_value_to_python_value_point(self):
         """ it should serialize and deserialize from/to db """
-        point = Point(2.1, 48.7, 4326)
-        instance = self.model(point=point)
+        point = Point(1, 2)
+        geom = Geometry(point, 4326)
+        instance = self.model(geom=geom)
         instance.save()
         data = self.model.select().dicts()
-        record = data[0]['point']
-        expected = Point(x=2.1, y=48.7, srid=4326)
-        self.assertEqual(record, expected)
+        result = data[0]['geom']
+        self.assertEqual(result.geom, point)
 
-    def test_to_db_value_to_python_value_different_srid(self):
-        """ it should convert the point in the field srid """
-        point = Point(639260.0, 6848180.0, 2154)
-        instance = self.model(point=point)
+    def test_to_db_value_to_python_value_point_different_srid(self):
+        point = Point(
+            7.82778710302907,
+            48.9433371177302)
+        geom = Geometry(point, 2154)
+        instance = self.model(geom=geom)
         instance.save()
         data = self.model.select().dicts()
-        record = data[0]['point']
-        expected = Point(x=2.1741607382356576, y=48.73088663096782, srid=4326)
-        self.assertEqual(record, expected)
+        result = data[0]['geom']
+        expected = Point(
+            -1.3630493579752925,
+            -5.983548810597482)
+        self.assertEqual(result.geom, expected)
+
+    def test_to_db_value_to_python_value_multi_polygon(self):
+        multipolygon = MultiPolygon(
+            [
+                (
+                    ((0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (1.0, 0.0)),
+                    [((0.1, 0.1), (0.1, 0.2), (0.2, 0.2), (0.2, 0.1))]
+                )
+            ]
+        )
+        geom = Geometry(multipolygon, 4326)
+        instance = self.model(geom=geom)
+        instance.save()
+        data = self.model.select().dicts()
+        result = data[0]['geom']
+        self.assertEqual(result.geom, multipolygon)
 
     def test_to_db_value_to_python_value_is_none(self):
-        point = None
-        instance = self.model(point=point)
+        instance = self.model(geom=None)
         instance.save()
-        self.assertEqual(instance.point, None)
+        self.assertEqual(instance.geom, None)
         data = self.model.select().dicts()
-        record = data[0]['point']
+        record = data[0]['geom']
         self.assertIsNone(record)
+
+
+
+
+
