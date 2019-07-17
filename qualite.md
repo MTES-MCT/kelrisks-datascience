@@ -131,9 +131,9 @@
       <ul>
         <li> Ile-de-France
           <ul>
-            <li>5233 coordonnées de type `housenumber` retrouvées</li>
-            <li>778 coordonnées de type `street` retrouvées </li>
-            <li>Reste 7248 enregistrements géoréférencés à la commune (~ 27%)</li>
+            <li>7239 coordonnées de type `housenumber` retrouvées</li>
+            <li>1810 coordonnées de type `street` retrouvées </li>
+            <li>Reste 4210 enregistrements géoréférencés à la commune (~ 16%)</li>
           </ul>
         </li>
         <li> Reste de la France
@@ -160,10 +160,13 @@
     <td></td>
   </tr>
   <tr>
-    <td>Données redressées en prod ?</td>
-    <td> Table prête à être copiée en prod pour l'Ile-de-France </td>
-    <td> pas encore </td>
-    <td> pas encore </td>
-    <td> pas encore </td>
+    <td> Résumé </td>
+    <td> 
+       <p> Précision des données source: 50% </p>
+       <p> Précision des données après redressement: 84% </p>
+    </td>
+    <td> </td>
+    <td>  </td>
+    <td>  </td>
   </tr>
 </table>
