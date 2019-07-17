@@ -9,7 +9,8 @@ from airflow.operators.python_operator import PythonOperator
 import helpers
 
 from kelrisks.embulk import load_sis
-from kelrisks.transformers.sis import CreateGeographyTransformer
+from kelrisks.transformers.sis import CreateGeographyTransformer, \
+    StagingTransformer, DeployTransformer
 
 
 default_args = helpers.default_args({"start_date": datetime(2019, 6, 11, 5)})
@@ -36,4 +37,22 @@ create_geography = PythonOperator(
     dag=dag)
 
 
-load_sis >> create_geography
+staging_transformer = StagingTransformer()
+
+
+stage = PythonOperator(
+    task_id='stage',
+    python_callable=staging_transformer.transform_load,
+    dag=dag)
+
+
+deploy_transformer = DeployTransformer()
+
+
+deploy = PythonOperator(
+    task_id='deploy',
+    python_callable=deploy_transformer.transform_load,
+    dag=dag)
+
+
+load_sis >> create_geography >> stage >> deploy

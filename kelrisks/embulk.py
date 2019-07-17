@@ -45,3 +45,7 @@ def load_s3ic():
 
 def load_sis():
     embulk_run('sis', 'sis', 'sis_source')
+
+
+def load_basol():
+    embulk_run('basol', 'basol', 'basol_source')

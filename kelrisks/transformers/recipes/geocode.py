@@ -26,11 +26,11 @@ def geocode_bulk(data, columns, citycode=None, postcode=None):
         return csv2dicts(StringIO(response.text), dialect='unix')
 
     geocoded = []
-    # split data in chunks of 1000
-    for chunk in chunks(data, 1000):
+    # split data in chunks
+    chunk_size = 100
+    for chunk in chunks(data, chunk_size):
         r = inner(chunk)
         geocoded += r
-
     return geocoded
 
 
@@ -46,6 +46,11 @@ def geocode_csv(csvlike, columns, citycode=None, postcode=None):
     files = {'data': csvlike}
 
     response = requests.post(addok_bano_search_csv, data=payload, files=files)
+
+    if response.status_code != 200:
+        csvlike.seek(0)
+        print(csvlike.read())
+
     response.raise_for_status()
 
     return response
