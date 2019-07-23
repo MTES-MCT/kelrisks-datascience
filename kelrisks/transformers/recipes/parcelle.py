@@ -1,13 +1,12 @@
 import re
 from collections import namedtuple
 
-'08|08105|05/02/2014|DO|308|'
 regex = re.compile(
-    '\d{2}\|(\d{5})\|\d{2}/\d{2}/\d{4}\|(\w+)\|(\d+)\|', re.IGNORECASE)
+    '\d{2}\|(\d{5})\|\d{2}/\d{2}/\d{4}\|([A-Z]{1,2})\|(\d{1,4})\|',
+    re.IGNORECASE)
 
 
 Parcelle = namedtuple('Parcelle', ['commune', 'section', 'numero'])
-
 
 def parse_parcelle(parcelles_str):
     """

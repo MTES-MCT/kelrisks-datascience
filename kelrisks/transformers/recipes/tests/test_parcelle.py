@@ -25,3 +25,21 @@ class ParcelleTestCase(TestCase):
         parcelles = parse_parcelle(invalid)
         self.assertEqual(parcelles, [])
 
+    def test_parse_parcelle_section_numeric(self):
+        """ it should return an empty array """
+        invalid = "08|08105|05/02/2014|12|308|"
+        parcelles = parse_parcelle(invalid)
+        self.assertEqual(parcelles, [])
+
+    def test_parse_parcelle_section_too_long(self):
+        """ it should return an empty array """
+        invalid = "08|08105|05/02/2014|ADT|308|"
+        parcelles = parse_parcelle(invalid)
+        self.assertEqual(parcelles, [])
+
+    def test_parse_parcelle_numero_too_long(self):
+        """ it should return an empty array"""
+        invalid = "08|08105|05/02/2014|ADT|30887|"
+        parcelles = parse_parcelle(invalid)
+        self.assertEqual(parcelles, [])
+
