@@ -2,11 +2,12 @@ import re
 from collections import namedtuple
 
 regex = re.compile(
-    '\d{2}\|(\d{5})\|\d{2}/\d{2}/\d{4}\|([A-Z]{1,2})\|(\d{1,4})\|',
+    '\d{2}\|(\d{5})\|\d{2}/\d{2}/\d{4}\|\d*([A-Z]{1,2})\d*\|(\d{1,4})\|',
     re.IGNORECASE)
 
 
 Parcelle = namedtuple('Parcelle', ['commune', 'section', 'numero'])
+
 
 def parse_parcelle(parcelles_str):
     """
