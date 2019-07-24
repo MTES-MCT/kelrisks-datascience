@@ -159,7 +159,7 @@ class DeployTransformer(PostgresPythonTransformer):
 
 
 class ParcelleTransformer(PostgresPythonTransformer):
-    """ Parse the field `cadastre_mulit` """
+    """ Parse the field `cadastre_multi` """
 
     input_table = 'basol_source'
     output_table = 'basol_parcelle_prepared'
