@@ -1,7 +1,7 @@
 import subprocess
 import sys
 
-from kelrisks.tests.helpers import setup_database, teardown_database
+from airflow.hooks.postgres_hook import PostgresHook
 
 
 class BaseCommand():
@@ -12,10 +12,23 @@ class BaseCommand():
 
 class RunTest(BaseCommand):
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.hook = PostgresHook("postgres_kelrisks")
+        test_db = "kelrisks_test"
+        self.drop_stmt = "DROP DATABASE IF EXISTS %s" % test_db
+        self.create_stmt = "CREATE DATABASE %s" % test_db
+
+    def setup_database(self):
+        self.hook.run([self.drop_stmt, self.create_stmt], autocommit=True)
+
+    def teardown_database(self):
+        self.hook.run(self.drop_stmt, autocommit=True)
+
     def run_from_argv(self, argv):
-        setup_database()
+        self.setup_database()
         subprocess.run(['python', '-m', 'unittest'] + argv)
-        teardown_database()
+        self.teardown_database()
 
 
 def get_commands():

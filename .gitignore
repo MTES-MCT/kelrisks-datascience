@@ -1,5 +1,7 @@
 # Data
 data
+data.copy
+csv
 
 # variables
 variables.json
