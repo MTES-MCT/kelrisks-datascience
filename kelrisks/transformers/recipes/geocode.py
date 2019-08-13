@@ -6,7 +6,6 @@ import requests
 from ...utils import csv2dicts, dicts2csv, chunks
 
 
-min_score = 0.7
 addok_bano_search = 'https://api-adresse.data.gouv.fr/search/'
 addok_bano_search_csv = addok_bano_search + 'csv/'
 

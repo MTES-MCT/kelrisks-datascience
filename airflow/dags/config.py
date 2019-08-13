@@ -17,7 +17,9 @@ def get_env_setting(setting):
 
 # Airflow connection defined as environement variables
 # See https://airflow.apache.org/howto/connection/index.html
-CONN_ID = 'postgres_kelrisks'
+CONN_ID = "postgres_kelrisks"
 
-# SQL scripts
-SQL_DIR = get_env_setting('SQL_DIR')
+
+# directories structure
+ROOT_DIR = get_env_setting("ROOT_DIR")
+SQL_DIR = get_env_setting("SQL_DIR")

@@ -19,12 +19,15 @@ kelrisks_default_args = {
 
 # List of datasets in schema etl
 etl_datasets = [
+    PostgresDataset(name="cadastre", **etl_default_args),
     PostgresDataset(name="basias_sites_source", **etl_default_args),
     PostgresDataset(name="basias_localisation_source", **etl_default_args),
+    PostgresDataset(name="basias_geocoded", **etl_default_args),
     PostgresDataset(name="basias_cadastre_source", **etl_default_args),
     PostgresDataset(name="basias_sites_prepared", **etl_default_args),
     PostgresDataset(name="basias_joined", **etl_default_args),
     PostgresDataset(name="basias_with_geog", **etl_default_args),
+    PostgresDataset(name="basias_parcelles", **etl_default_args),
     PostgresDataset(name="basias_with_geom_prepared", **etl_default_args),
 ]
 
