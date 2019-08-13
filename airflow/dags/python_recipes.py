@@ -7,8 +7,11 @@ from urllib.request import urlretrieve
 import geojson
 import tempfile
 import gzip
+import zipfile
+import csv
+import io
 
-from sqlalchemy import Column, BigInteger, func, String, Float
+from sqlalchemy import Column, BigInteger, func, String, Float, Text
 from geoalchemy2 import Geometry
 import numpy as np
 from bulk_geocoding import geocode
@@ -21,7 +24,7 @@ from operators import extract_basias_parcelles_from_row
 from constants import DEPARTMENTS
 
 #############################################
-# Cadastre recipes ############################
+# Cadastre recipes ##########################
 #############################################
 
 
@@ -76,6 +79,62 @@ def load_cadastre():
                             "type_geom": feature["geometry"]["type"],
                             "geog": wkb.dumps(s, hex=True, srid=4326)
                         }
+
+                        writer.write_row_dict(row)
+
+
+#############################################
+# SIS recipes ###############################
+#############################################
+
+
+def load_sis():
+    """
+    Load SIS data
+    We do not use embulk here because it does not handle geojson
+    """
+
+    sis_source = Dataset("etl", "sis_source")
+
+    dtype = [
+        Column("id", BigInteger(), primary_key=True, autoincrement=True),
+        Column("id_sis", String),
+        Column("numero_affichage", String),
+        Column("numero_basol", String),
+        Column("adresse", Text),
+        Column("lieu_dit", String),
+        Column("code_insee", String),
+        Column("nom_commune", String),
+        Column("nom_departement", String),
+        Column("x", Float(8)),
+        Column("y", Float(8)),
+        Column("surface_m2", Float),
+        Column("geom", Geometry(srid=4326))
+    ]
+
+    sis_source.write_dtype(dtype)
+
+    with sis_source.get_writer() as writer:
+
+        with tempfile.NamedTemporaryFile() as temp:
+
+            url = "https://kelrisks.fra1.digitaloceanspaces.com/sis.zip"
+            urlretrieve(url, temp.name)
+
+            with zipfile.ZipFile(temp.name) as zfile:
+
+                with zfile.open("sis/sis.csv") as csvfile:
+
+                    reader = csv.DictReader(
+                        io.TextIOWrapper(csvfile),
+                        delimiter=",",
+                        quotechar="\"")
+
+                    for row in reader:
+
+                        g = geojson.loads(row["geom"])
+                        s = shape(g)
+                        row["geom"] = wkb.dumps(s, hex=True, srid=4326)
 
                         writer.write_row_dict(row)
 
