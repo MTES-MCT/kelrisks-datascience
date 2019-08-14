@@ -2,14 +2,6 @@
 
 from datetime import timedelta
 
-from config import SQL_DIR
-
-
-def resolve_env(env):
-    if type(env) == dict:
-        return {**(default_env()), **env}
-    return default_env()
-
 
 def default_args(conf):
     default = {

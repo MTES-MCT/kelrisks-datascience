@@ -9,7 +9,7 @@ from airflow.operators.data_preparation import EmbulkOperator, \
     DownloadUnzipOperator
 
 import helpers
-import python_recipes as recipes
+import recipes.basias_recipes as recipes
 from config import SQL_DIR, ROOT_DIR
 
 

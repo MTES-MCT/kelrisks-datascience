@@ -1,5 +1,8 @@
 # -*- coding=utf-8 -*-
 
+# Common SRID
+WGS84 = 4326
+LAMBERT2 = 27572
 
 # Liste des départements français
 DEPARTMENTS = {

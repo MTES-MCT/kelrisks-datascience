@@ -1,84 +1,59 @@
-"""
-Extract, transform, and load basol data
-"""
+# -*- coding: utf-8 -*-
+
 from datetime import datetime
 
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
+from airflow.operators.data_preparation import DownloadUnzipOperator, \
+    EmbulkOperator
+from airflow.operators.dummy_operator import DummyOperator
 
 import helpers
-
-from kelrisks.embulk import load_basol
-from kelrisks.transformers.basol import CreateGeometryTransformer, \
-    GeocodeTransformer, ParcelleTransformer, StagingTransformer, \
-    DeployTransformer, DeployParcelleTransformer, NormalizePrecisionTransformer
-
+import recipes.basol_recipes as recipes
+from config import DATA_DIR
 
 default_args = helpers.default_args({"start_date": datetime(2019, 6, 11, 5)})
 
 
-dag = DAG(
-    "prepare_basol",
-    default_args=default_args,
-    schedule_interval=None)
+with DAG("prepare_basol",
+         default_args=default_args,
+         schedule_interval=None) as dag:
 
+    start = DummyOperator(task_id="start")
 
-load = PythonOperator(
-    task_id='load_basol',
-    python_callable=load_basol,
-    dag=dag)
+    download = DownloadUnzipOperator(
+        task_id="download",
+        url="https://kelrisks.fra1.digitaloceanspaces.com/basol.zip",
+        dir_path=DATA_DIR)
 
+    load = EmbulkOperator(
+        task_id="load",
+        embulk_config="basol.yml.liquid")
 
-geocode_transformer = GeocodeTransformer()
+    parse_cadastre = PythonOperator(
+        task_id="parse_cadastre",
+        python_callable=recipes.parse_cadastre)
 
-geocode = PythonOperator(
-    task_id='geocode',
-    python_callable=geocode_transformer.transform_load,
-    dag=dag)
+    join_cadastre = PythonOperator(
+        task_id="join_cadastre",
+        python_callable=recipes.join_cadastre)
 
-create_geometry_transformer = CreateGeometryTransformer()
+    merge_cadastre = PythonOperator(
+        task_id="merge_cadastre",
+        python_callable=recipes.merge_cadastre)
 
-create_geometry = PythonOperator(
-    task_id='create_geometry',
-    python_callable=create_geometry_transformer.transform_load,
-    dag=dag)
+    geocode = PythonOperator(
+        task_id="geocode",
+        python_callable=recipes.geocode)
 
-normalize_precision_transformer = NormalizePrecisionTransformer()
+    normalize_precision = PythonOperator(
+        task_id="normalize_precision",
+        python_callable=recipes.normalize_precision)
 
-normalize_precision = PythonOperator(
-    task_id='normalize_precision',
-    python_callable=normalize_precision_transformer.transform_load,
-    dag=dag)
+    add_parcels = PythonOperator(
+        task_id="add_parcels",
+        python_callable=recipes.add_parcels)
 
-staging_transformer = StagingTransformer()
-
-stage = PythonOperator(
-    task_id='stage',
-    python_callable=staging_transformer.transform_load,
-    dag=dag)
-
-deploy_transformer = DeployTransformer()
-
-deploy = PythonOperator(
-    task_id='deploy',
-    python_callable=deploy_transformer.transform_load,
-    dag=dag)
-
-parcelle_transformer = ParcelleTransformer()
-
-parse_parcelle = PythonOperator(
-    task_id='parse_parcelle',
-    python_callable=parcelle_transformer.transform_load,
-    dag=dag)
-
-deploy_parcelle_transformer = DeployParcelleTransformer()
-
-deploy_parcelle = PythonOperator(
-    task_id='deploy_parcelle',
-    python_callable=deploy_parcelle_transformer.transform_load,
-    dag=dag)
-
-
-load >> geocode >> create_geometry >> normalize_precision >> stage >> deploy
-
-load >> parse_parcelle >> deploy_parcelle
+    merge_geog = PythonOperator(
+        task_id="merge_geog",
+        python_callable=recipes.merge_geog)

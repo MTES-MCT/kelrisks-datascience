@@ -6,7 +6,7 @@ from datetime import datetime
 from airflow.operators.python_operator import PythonOperator
 
 import helpers
-import python_recipes as recipes
+import recipes.cadastre_recipes as recipes
 
 
 default_args = helpers.default_args({"start_date": datetime(2019, 6, 11, 5)})

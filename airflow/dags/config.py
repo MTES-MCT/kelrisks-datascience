@@ -23,3 +23,4 @@ CONN_ID = "postgres_kelrisks"
 # directories structure
 ROOT_DIR = get_env_setting("ROOT_DIR")
 SQL_DIR = get_env_setting("SQL_DIR")
+DATA_DIR = get_env_setting("DATA_DIR")

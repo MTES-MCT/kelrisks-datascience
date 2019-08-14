@@ -1,67 +1,45 @@
-"""
-Extract, transform, and load s3ic data
-"""
+# -*- coding: utf-8 -*-
+
+import os
 from datetime import datetime
 
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
+from airflow.operators.data_preparation import DownloadUnzipOperator, \
+    Shp2pgsqlOperator
+from airflow.operators.dummy_operator import DummyOperator
 
 import helpers
-
-from kelrisks.transformers.s3ic import GeocodeTransformer, \
-    CreateGeographyTransformer, CreateCentroideCommuneTransformer, \
-    StagingTransformer, DeployTransformer
-from kelrisks.embulk import load_s3ic
+import recipes.s3ic_recipes as recipes
+from config import CONN_ID, DATA_DIR
 
 
 default_args = helpers.default_args({"start_date": datetime(2019, 6, 11, 5)})
 
 
-dag = DAG(
-    "prepare_s3ic",
-    default_args=default_args,
-    schedule_interval=None)
+with DAG("prepare_s3ic",
+         default_args=default_args,
+         schedule_interval=None) as dag:
 
-load_s3ic = PythonOperator(
-    task_id='load_s3ic',
-    python_callable=load_s3ic,
-    dag=dag)
+    start = DummyOperator(task_id="start")
 
-geocode_transformer = GeocodeTransformer()
+    # Download s3ic shapefile
+    base_url = "https://kelrisks.fra1.digitaloceanspaces.com/s3ic.zip"
 
-geocode = PythonOperator(
-    task_id='geocode',
-    python_callable=geocode_transformer.transform_load,
-    dag=dag)
+    download_shp = DownloadUnzipOperator(
+        task_id="download_shp",
+        url="https://kelrisks.fra1.digitaloceanspaces.com/s3ic.zip",
+        dir_path=DATA_DIR)
 
-create_geo_transformer = CreateGeographyTransformer()
+    # Load s3ic data
+    s3ic_shapefile = os.path.join(DATA_DIR, 's3ic', 'ICPE_4326.shp')
+    load_shp = Shp2pgsqlOperator(
+        task_id="load_shp",
+        shapefile=s3ic_shapefile,
+        table="etl.s3ic_source",
+        connection=CONN_ID)
 
-create_geo = PythonOperator(
-    task_id='create_geo',
-    python_callable=create_geo_transformer.transform_load,
-    dag=dag)
-
-create_centroide_commune_transformer = CreateCentroideCommuneTransformer()
-
-create_centroide_commune = PythonOperator(
-    task_id='create_centroide_commune',
-    python_callable=create_centroide_commune_transformer.transform_load,
-    dag=dag)
-
-staging_transformer = StagingTransformer()
-
-stage = PythonOperator(
-    task_id='stage',
-    python_callable=staging_transformer.transform_load,
-    dag=dag)
-
-deploy_transformer = DeployTransformer()
-
-deploy = PythonOperator(
-    task_id='deploy',
-    python_callable=deploy_transformer.transform_load,
-    dag=dag)
-
-
-load_s3ic >> geocode >> create_geo >> \
-    create_centroide_commune >> stage >> deploy
+    # Geocode adresses
+    geocode = PythonOperator(
+        task_id="geocode",
+        python_callable=recipes.geocode)

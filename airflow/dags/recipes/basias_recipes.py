@@ -1,147 +1,13 @@
 # -*- coding=utf-8 -*-
 
-"""
-Recipes are used as python_callable in Airflow PythonOperator
-"""
-from urllib.request import urlretrieve
-import geojson
-import tempfile
-import gzip
-import zipfile
-import csv
-import io
-
-from sqlalchemy import Column, BigInteger, func, String, Float, Text
-from geoalchemy2 import Geometry
 import numpy as np
+from sqlalchemy import Column, BigInteger, Float, String, func
+from geoalchemy2 import Geometry
 from bulk_geocoding import geocode
-from shapely.geometry import shape
-from shapely import wkb
 
 from datasets import Dataset
-from utils import row2dict, merge_dtype
-from operators import extract_basias_parcelles_from_row
-from constants import DEPARTMENTS
-
-#############################################
-# Cadastre recipes ##########################
-#############################################
-
-
-def load_cadastre():
-
-    cadastre = Dataset("etl", "cadastre")
-
-    dtype = [
-        Column("id", BigInteger(), primary_key=True, autoincrement=True),
-        Column("code", String),
-        Column("commune", String),
-        Column("prefixe", String),
-        Column("section", String),
-        Column("numero", String),
-        Column("type", String),
-        Column("type_geom", String),
-        Column("geog", Geometry(srid=4326))
-    ]
-
-    cadastre.write_dtype(dtype)
-
-    with cadastre.get_writer() as writer:
-
-        for department in DEPARTMENTS:
-
-            with tempfile.NamedTemporaryFile() as temp:
-
-                url = "https://cadastre.data.gouv.fr" + \
-                    "/data/etalab-cadastre/latest/geojson/departements" + \
-                    "/{dep}/cadastre-{dep}-parcelles.json.gz" \
-                    .format(dep=department)
-
-                urlretrieve(url, temp.name)
-
-                with gzip.open(temp.name) as f:
-
-                    data = geojson.loads(f.read())
-
-                    features = data["features"]
-
-                    for feature in features:
-
-                        s = shape(feature["geometry"])
-
-                        row = {
-                            "code": feature["id"],
-                            "commune": feature["properties"]["commune"],
-                            "prefixe": feature["properties"]["prefixe"],
-                            "section": feature["properties"]["section"],
-                            "numero": feature["properties"]["numero"],
-                            "type": feature["type"],
-                            "type_geom": feature["geometry"]["type"],
-                            "geog": wkb.dumps(s, hex=True, srid=4326)
-                        }
-
-                        writer.write_row_dict(row)
-
-
-#############################################
-# SIS recipes ###############################
-#############################################
-
-
-def load_sis():
-    """
-    Load SIS data
-    We do not use embulk here because it does not handle geojson
-    """
-
-    sis_source = Dataset("etl", "sis_source")
-
-    dtype = [
-        Column("id", BigInteger(), primary_key=True, autoincrement=True),
-        Column("id_sis", String),
-        Column("numero_affichage", String),
-        Column("numero_basol", String),
-        Column("adresse", Text),
-        Column("lieu_dit", String),
-        Column("code_insee", String),
-        Column("nom_commune", String),
-        Column("nom_departement", String),
-        Column("x", Float(8)),
-        Column("y", Float(8)),
-        Column("surface_m2", Float),
-        Column("geom", Geometry(srid=4326))
-    ]
-
-    sis_source.write_dtype(dtype)
-
-    with sis_source.get_writer() as writer:
-
-        with tempfile.NamedTemporaryFile() as temp:
-
-            url = "https://kelrisks.fra1.digitaloceanspaces.com/sis.zip"
-            urlretrieve(url, temp.name)
-
-            with zipfile.ZipFile(temp.name) as zfile:
-
-                with zfile.open("sis/sis.csv") as csvfile:
-
-                    reader = csv.DictReader(
-                        io.TextIOWrapper(csvfile),
-                        delimiter=",",
-                        quotechar="\"")
-
-                    for row in reader:
-
-                        g = geojson.loads(row["geom"])
-                        s = shape(g)
-                        row["geom"] = wkb.dumps(s, hex=True, srid=4326)
-
-                        writer.write_row_dict(row)
-
-
-#############################################
-# BASIAS recipes ############################
-#############################################
+from utils import merge_dtype, row2dict
+import transformers.basias_transformers as transformers
 
 
 def prepare_basias_sites():
@@ -320,7 +186,6 @@ def create_basias_geopoint():
                 func.st_makepoint(
                     BasiasJoined.xl2_adresse,
                     BasiasJoined.yl2_adresse), 27572), 4326)) \
-        .limit(5) \
         .all()
 
     with basias_with_geog.get_writer() as writer:
@@ -368,7 +233,7 @@ def extract_basias_parcelles():
     with basias_parcelles.get_writer() as writer:
         for (cadastre, numero_insee) in q:
             row = {**row2dict(cadastre), "numero_insee": numero_insee}
-            parcelles = extract_basias_parcelles_from_row(row)
+            parcelles = transformers.extract_basias_parcelles_from_row(row)
             for parcelle in parcelles:
                 output_row = {
                     "indice_departemental": row["indice_departemental"],
@@ -378,6 +243,3 @@ def extract_basias_parcelles():
                 writer.write_row_dict(output_row)
 
     session.close()
-
-
-

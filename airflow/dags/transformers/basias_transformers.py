@@ -1,12 +1,12 @@
 # -*- coding=utf-8 -*-
 
+"""
+Transformers are building blocks for Python recipes. They operate
+on individudal rows, cells or dataframes
+"""
+
 import re
 from collections import namedtuple
-
-"""
-Operators are building blocks for Python recipes. They operate
-on individudal columns or cells
-"""
 
 
 Parcelle = namedtuple("Parcelle", ["commune", "section", "numero"])
