@@ -7,7 +7,7 @@ import geojson
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
-from sqlalchemy import Column, BigInteger, String
+from sqlalchemy import Column, BigInteger, String, Index
 from geoalchemy2 import Geometry
 from shapely.geometry import shape
 from shapely import wkb

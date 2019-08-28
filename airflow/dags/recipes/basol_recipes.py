@@ -1,7 +1,7 @@
 # -*- coding=utf-8 -*-
 
 import numpy as np
-from sqlalchemy import Column, String, BigInteger, Float, func
+from sqlalchemy import Column, String, BigInteger, Float, func, insert
 from geoalchemy2 import Geometry
 from datasets import Dataset
 from bulk_geocoding import geocode as bulk_geocode
@@ -48,8 +48,9 @@ def join_cadastre():
     # Output datasets
     basol_cadastre_joined = Dataset("etl", "basol_cadastre_joined")
 
+    basol_cadastre_dtype = basol_cadastre.read_dtype()
     dtype = [
-        *basol_cadastre.read_dtype(),
+        *basol_cadastre_dtype,
         Column("geog", Geometry(srid=4326))
     ]
     basol_cadastre_joined.write_dtype(dtype)
@@ -59,15 +60,13 @@ def join_cadastre():
 
     session = basol_cadastre.get_session()
 
-    cond = (BasolCadastre.commune == Cadastre.commune) and \
-           (BasolCadastre.section == Cadastre.section) and \
+    cond = (BasolCadastre.commune == Cadastre.commune) & \
+           (BasolCadastre.section == Cadastre.section) & \
            (BasolCadastre.numero == Cadastre.numero)
 
     q = session.query(BasolCadastre, Cadastre.geog) \
-               .join(Cadastre, cond) \
-               .filter(Cadastre.geog is not None) \
-               .limit(100) \
-               .all()
+        .join(Cadastre, cond) \
+        .yield_per(500)
 
     with basol_cadastre_joined.get_writer() as writer:
 
@@ -77,6 +76,7 @@ def join_cadastre():
                 "geog": geog}
             output_row.pop("id")
             writer.write_row_dict(output_row)
+
     session.close()
 
 
@@ -116,6 +116,8 @@ def merge_cadastre():
                 "geog": geog}
             writer.write_row_dict(row)
 
+    session.close()
+
 
 def geocode():
     """ Geocode Basol adresses """
@@ -137,7 +139,7 @@ def geocode():
         Column("geocoded_longitude", Float(precision=10)),
         Column("geocoded_result_score", Float()),
         Column("geocoded_result_type", String()),
-        Column("geocoded_result_id", String())
+        Column("adresse_id", String())
     ]
 
     basol_geocoded.write_dtype(output_dtype)
@@ -171,7 +173,13 @@ def geocode():
                 row["geocoded_result_score"] = float(result_score) \
                     if result_score else None
                 row["geocoded_result_type"] = geocodage["result_type"]
-                row["geocoded_result_id"] = geocodage["result_id"]
+
+                if row["geocoded_result_type"] == precisions.HOUSENUMBER and \
+                   row["geocoded_result_score"] > 0.6:
+                    row["adresse_id"] = geocodage["result_id"]
+                else:
+                    row["adresse_id"] = None
+
                 writer.write_row_dict(row)
 
 
@@ -193,45 +201,6 @@ def normalize_precision():
             writer.write_row_dict(normalized)
 
 
-def add_parcels():
-    """ join table basol_normalized with basol_cadastre_merged """
-
-    # input datasets
-    basol_normalized = Dataset("etl", "basol_normalized")
-    basol_cadastre_merged = Dataset("etl", "basol_cadastre_merged")
-
-    # output datasets
-    basol_with_parcels = Dataset("etl", "basol_with_parcels")
-
-    BasolNormalized = basol_normalized.reflect()
-    BasolCadastreMerged = basol_cadastre_merged.reflect()
-
-    basol_with_parcels.write_dtype([
-        *basol_normalized.read_dtype(),
-        Column("geog", Geometry(srid=4326)),
-        Column("precision", String),
-        Column("geog_source", String)])
-
-    session = basol_normalized.get_session()
-
-    cond = (BasolNormalized.numerobasol == BasolCadastreMerged.numerobasol)
-    q = session.query(BasolNormalized, BasolCadastreMerged.geog) \
-               .join(BasolCadastreMerged, cond, isouter=True) \
-               .all()
-
-    with basol_with_parcels.get_writer() as writer:
-        for (row, geog) in q:
-            output_row = {
-                **row2dict(row),
-                "geog": geog,
-                "precision": None,
-                "geog_source": None}
-            if geog is not None:
-                output_row["precision"] = precisions.PARCEL
-                output_row["geog_source"] = "cadastre"
-            writer.write_row_dict(output_row)
-
-
 def merge_geog():
     """
     Choose best precision between initial coordinates
@@ -240,49 +209,188 @@ def merge_geog():
     """
 
     # Input dataset
-    basol_with_parcels = Dataset("etl", "basol_with_parcels")
+    basol_geocoded = Dataset("etl", "basol_normalized")
 
     # Output dataset
     basol_geog_merged = Dataset("etl", "basol_geog_merged")
 
-    dtype = basol_with_parcels.read_dtype()
-    basol_geog_merged.write_dtype(dtype)
+    basol_geog_merged.write_dtype([
+        *basol_geocoded.read_dtype(),
+        Column("geog", Geometry(srid=4326)),
+        Column("precision", String),
+        Column("geog_source", String)])
 
-    BasolWithParcels = basol_with_parcels.reflect()
+    BasolGeocoded = basol_geocoded.reflect()
 
-    session = basol_with_parcels.get_session()
+    session = basol_geocoded.get_session()
 
     point_lambert2 = func.ST_Transform(
         func.ST_setSRID(
             func.ST_MakePoint(
-                BasolWithParcels.coordxlambertii,
-                BasolWithParcels.coordylambertii
+                BasolGeocoded.coordxlambertii,
+                BasolGeocoded.coordylambertii
             ), LAMBERT2), WGS84)
 
     point_geocoded = func.ST_setSRID(
         func.ST_MakePoint(
-            BasolWithParcels.geocoded_longitude,
-            BasolWithParcels.geocoded_latitude), WGS84)
+            BasolGeocoded.geocoded_longitude,
+            BasolGeocoded.geocoded_latitude), WGS84)
 
-    q = session.query(BasolWithParcels, point_lambert2, point_geocoded).all()
+    q = session.query(BasolGeocoded, point_lambert2, point_geocoded).all()
 
     with basol_geog_merged.get_writer() as writer:
 
         for (row, point_lambert2, point_geocoded) in q:
 
-            if row.geog is not None:
-                # if geog is already set, do nothing
-                pass
+            output_row = {
+                **row2dict(row),
+                "geog": None,
+                "precision": None,
+                "geog_source": None
+            }
 
-            elif row.l2e_precision == precisions.HOUSENUMBER:
-                row.geog = point_lambert2
-                row.precision = row.l2e_precision
-                row.geog_source = "lambert2"
+            if row.l2e_precision == precisions.HOUSENUMBER:
+
+                output_row["geog"] = point_lambert2
+                output_row["precision"] = row.l2e_precision
+                output_row["geog_source"] = "lambert2"
 
             elif (row.geocoded_result_type == precisions.HOUSENUMBER) and \
                  (row.geocoded_result_score >= 0.6):
-                row.geog = point_geocoded
-                row.precision = row.geocoded_result_type
-                row.geog_source = "geocodage"
+                output_row["geog"] = point_geocoded
+                output_row["precision"] = row.geocoded_result_type
+                output_row["geog_source"] = "geocodage"
+
+            writer.write_row_dict(output_row)
+
+    session.close()
+
+
+def intersect():
+    """
+    Find the closest parcelle to the point and set it as
+    new geography
+    """
+
+    # Input dataset
+    basol_geog_merged = Dataset("etl", "basol_geog_merged")
+    cadastre = Dataset("etl", "cadastre")
+
+    # Output dataset
+    basol_intersected = Dataset("etl", "basol_intersected")
+
+    dtype = basol_geog_merged.read_dtype()
+    basol_intersected.write_dtype(dtype)
+
+    Cadastre = cadastre.reflect()
+
+    BasolGeogMerged = basol_geog_merged.reflect()
+    session = basol_geog_merged.get_session()
+
+    stmt = session.query(Cadastre.geog) \
+                  .filter(func.st_dwithin(
+                      Cadastre.geog,
+                      BasolGeogMerged.geog,
+                      0.0001)) \
+                  .order_by(func.st_distance(
+                      Cadastre.geog,
+                      BasolGeogMerged.geog)) \
+                  .limit(1) \
+                  .label("nearest")
+
+    q = session.query(BasolGeogMerged, stmt).all()
+
+    with basol_intersected.get_writer() as writer:
+        for (row, cadastre_geog) in q:
+            if cadastre_geog is not None:
+                row.geog = cadastre_geog
+            writer.write_row_dict(row2dict(row))
+
+    session.close()
+
+
+def add_parcels():
+    """ join table basol_intersected with basol_cadastre_merged """
+
+    # input datasets
+    basol_intersected = Dataset("etl", "basol_intersected")
+    basol_cadastre_merged = Dataset("etl", "basol_cadastre_merged")
+
+    # output datasets
+    basol_with_parcels = Dataset("etl", "basol_with_parcels")
+
+    BasolIntersected = basol_intersected.reflect()
+    BasolCadastreMerged = basol_cadastre_merged.reflect()
+
+    dtype = basol_intersected.read_dtype()
+    basol_with_parcels.write_dtype(dtype)
+
+    session = basol_intersected.get_session()
+
+    cond = (BasolIntersected.numerobasol == BasolCadastreMerged.numerobasol)
+    q = session.query(BasolIntersected, BasolCadastreMerged.geog) \
+               .join(BasolCadastreMerged, cond, isouter=True) \
+               .all()
+
+    with basol_with_parcels.get_writer() as writer:
+        for (row, geog) in q:
+            if geog is not None:
+                row.precision = precisions.PARCEL
+                row.geog_source = "cadastre"
+                row.geog = geog
+            writer.write_row_dict(row2dict(row))
+
+    session.close()
+
+
+def add_communes():
+    """
+    set commune geog for all records where geog is not set with
+    a better precision
+    """
+
+    # input dataset
+    basol_with_parcels = Dataset("etl", "basol_with_parcels")
+    communes = Dataset("etl", "commune")
+
+    # output dataset
+    basol_with_communes = Dataset("etl", "basol_with_commune")
+
+    dtype = basol_with_parcels.read_dtype()
+    basol_with_communes.write_dtype(dtype)
+
+    BasolWithParcels = basol_with_parcels.reflect()
+    Commune = communes.reflect()
+
+    session = basol_with_parcels.get_session()
+
+    q = session.query(BasolWithParcels, Commune.geog) \
+               .join(Commune,
+                     BasolWithParcels.code_insee == Commune.insee) \
+               .all()
+
+    with basol_with_communes.get_writer() as writer:
+
+        for (row, commune) in q:
+
+            if row.geog is None:
+                row.geog = commune
+                row.precision = precisions.MUNICIPALITY
+                row.geog_source = "code_insee"
 
             writer.write_row_dict(row2dict(row))
+
+    session.close()
+
+
+def check():
+
+    basol = Dataset("etl", "basol")
+
+    Basol = basol.reflect()
+
+    session = basol.get_session()
+
+    count = session.query(Basol).count()
+
+    assert count == 6959

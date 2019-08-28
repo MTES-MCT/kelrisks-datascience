@@ -5,12 +5,12 @@ from datetime import datetime
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from airflow.operators.data_preparation import DownloadUnzipOperator, \
-    EmbulkOperator
+    EmbulkOperator, CopyTableOperator
 from airflow.operators.dummy_operator import DummyOperator
 
 import helpers
 import recipes.basol_recipes as recipes
-from config import DATA_DIR
+from config import DATA_DIR, CONN_ID
 
 default_args = helpers.default_args({"start_date": datetime(2019, 6, 11, 5)})
 
@@ -50,10 +50,38 @@ with DAG("prepare_basol",
         task_id="normalize_precision",
         python_callable=recipes.normalize_precision)
 
+    merge_geog = PythonOperator(
+        task_id="merge_geog",
+        python_callable=recipes.merge_geog)
+
+    intersect = PythonOperator(
+        task_id="intersect",
+        python_callable=recipes.intersect)
+
     add_parcels = PythonOperator(
         task_id="add_parcels",
         python_callable=recipes.add_parcels)
 
-    merge_geog = PythonOperator(
-        task_id="merge_geog",
-        python_callable=recipes.merge_geog)
+    add_communes = PythonOperator(
+        task_id="add_communes",
+        python_callable=recipes.add_communes)
+
+    stage = CopyTableOperator(
+        task_id="stage",
+        postgres_conn_id=CONN_ID,
+        source="etl.basol_with_commune",
+        destination="etl.basol")
+
+    check = PythonOperator(
+        task_id="check",
+        python_callable=recipes.check)
+
+    start >> download >> load
+
+    load >> parse_cadastre >> join_cadastre >> merge_cadastre
+
+    load >> geocode >> normalize_precision >> merge_geog >> intersect
+
+    [merge_cadastre, intersect] >> add_parcels >> add_communes
+
+    add_communes >> stage >> check

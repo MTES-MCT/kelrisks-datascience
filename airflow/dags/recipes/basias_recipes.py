@@ -12,7 +12,7 @@ import transformers.basias_transformers as transformers
 
 def prepare_basias_sites():
     """
-    This recipe add an BigInteger field id and
+    This recipe add a BigInteger field id and
     keep only particular columns
     """
 
@@ -196,19 +196,27 @@ def create_basias_geopoint():
             writer.write_row_dict(output_row)
 
 
-def extract_basias_parcelles():
+def parse_cadastre():
+    """
+    This recipe parse cadastre information which is dirty
+    Exemple:
+    ZA 128 et 146
+    ? 131
+    AH 575-574-43-224 etc
+    """
 
     # input dataset
     basias_cadastre_source = Dataset("etl", "basias_cadastre_source")
-    basias_joined = Dataset("etl", "basias_joined")
+    basias_localisation_source = Dataset("etl", "basias_localisation_source")
 
     # output dataset
-    basias_parcelles = Dataset("etl", "basias_parcelles")
+    basias_cadastre_parsed = Dataset("etl", "basias_cadastre_parsed")
 
     # join basias_cadastre with basias_sites to get numero_insee
     BasiasCadastreSource = basias_cadastre_source.reflect(
         primary_key="indice_departemental")
-    BasiasJoined = basias_joined.reflect()
+    BasiasLocalisationSource = basias_localisation_source.reflect(
+        primary_key="indice_departemental")
 
     session = basias_cadastre_source.get_session()
 
@@ -220,17 +228,19 @@ def extract_basias_parcelles():
         Column("section", String),
         Column("numero", String)]
 
-    basias_parcelles.write_dtype(output_dtype)
+    basias_cadastre_parsed.write_dtype(output_dtype)
 
+    # We need to join with basias_localiation_source because the table
+    # basias_cadastre_source does not contains insee code
     q = session \
-        .query(BasiasCadastreSource, BasiasJoined.numero_insee) \
+        .query(BasiasCadastreSource, BasiasLocalisationSource.numero_insee) \
         .join(
-            BasiasJoined,
+            BasiasLocalisationSource,
             BasiasCadastreSource.indice_departemental ==
-            BasiasJoined.indice_departemental) \
+            BasiasLocalisationSource.indice_departemental) \
         .all()
 
-    with basias_parcelles.get_writer() as writer:
+    with basias_cadastre_parsed.get_writer() as writer:
         for (cadastre, numero_insee) in q:
             row = {**row2dict(cadastre), "numero_insee": numero_insee}
             parcelles = transformers.extract_basias_parcelles_from_row(row)
