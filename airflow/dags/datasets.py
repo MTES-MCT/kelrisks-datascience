@@ -40,13 +40,19 @@ etl_datasets = [
     PostgresDataset(name="s3ic_geocoded", **etl_default_args),
     PostgresDataset(name="basias_sites_source", **etl_default_args),
     PostgresDataset(name="basias_localisation_source", **etl_default_args),
+    PostgresDataset(name="basias_localisation_geocoded", **etl_default_args),
+    PostgresDataset(name="basias_localisation_geog_merged", **etl_default_args),
+    PostgresDataset(name="basias_localisation_intersected", **etl_default_args),
     PostgresDataset(name="basias_cadastre_source", **etl_default_args),
     PostgresDataset(name="basias_cadastre_parsed", **etl_default_args),
-    PostgresDataset(name="basias_geocoded", **etl_default_args),
+    PostgresDataset(name="basias_cadastre_with_geog", **etl_default_args),
+    PostgresDataset(name="basias_cadastre_merged", **etl_default_args),
     PostgresDataset(name="basias_sites_prepared", **etl_default_args),
-    PostgresDataset(name="basias_joined", **etl_default_args),
-    PostgresDataset(name="basias_with_geog", **etl_default_args),
-    PostgresDataset(name="basias_with_geom_prepared", **etl_default_args),
+    PostgresDataset(name="basias_localisation_with_cadastre", **etl_default_args),
+    PostgresDataset(name="basias_sites_localisation_joined", **etl_default_args),
+    PostgresDataset(name="basias_sites_with_commune", **etl_default_args),
+    PostgresDataset(name="basias_sites_with_version", **etl_default_args),
+    PostgresDataset(name="basias", **etl_default_args)
 ]
 
 # List of datasets in schema kelrisks
