@@ -33,9 +33,13 @@ with DAG("prepare_sis",
         task_id="set_precision",
         python_callable=recipes.set_precision)
 
+    add_version = PythonOperator(
+        task_id="add_version",
+        python_callable=recipes.add_version)
+
     stage = CopyTableOperator(
         task_id="stage",
-        source="etl.sis_with_precision",
+        source="etl.sis_with_version",
         destination="etl.sis",
         postgres_conn_id=CONN_ID)
 

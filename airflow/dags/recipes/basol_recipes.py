@@ -1,7 +1,7 @@
 # -*- coding=utf-8 -*-
 
 import numpy as np
-from sqlalchemy import Column, String, BigInteger, Float, func, insert
+from sqlalchemy import Column, String, BigInteger, Float, func, Integer
 from geoalchemy2 import Geometry
 from datasets import Dataset
 from bulk_geocoding import geocode as bulk_geocode
@@ -381,6 +381,26 @@ def add_communes():
             writer.write_row_dict(row2dict(row))
 
     session.close()
+
+
+def add_version():
+    """ Add a version column for compatibility with Spring """
+
+    # Input dataset
+    basol_with_communes = Dataset("etl", "basol_with_commune")
+
+    # Output dataset
+    basol_with_version = Dataset(
+        "etl", "basol_with_version")
+
+    basol_with_version.write_dtype([
+        *basol_with_communes.read_dtype(),
+        Column("version", Integer)
+    ])
+
+    with basol_with_version.get_writer() as writer:
+        for row in basol_with_communes.iter_rows():
+            writer.write_row_dict(row)
 
 
 def check():

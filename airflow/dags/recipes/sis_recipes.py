@@ -8,7 +8,7 @@ import io
 import geojson
 import numpy as np
 
-from sqlalchemy import Column, String, BigInteger, Float, Text
+from sqlalchemy import Column, String, BigInteger, Float, Text, Integer
 from geoalchemy2 import Geometry
 from shapely.geometry import shape
 from shapely import wkb
@@ -157,6 +157,25 @@ def set_precision():
                 "geog_source": "geog"
             }
             writer.write_row_dict(output_row)
+
+
+def add_version():
+    """ Add a version column for compatibility with Spring """
+
+    # Input dataset
+    sis_with_precision = Dataset("etl", "sis_with_precision")
+
+    # Output dataset
+    sis_with_version = Dataset("etl", "sis_with_version")
+
+    sis_with_version.write_dtype([
+        *sis_with_precision.read_dtype(),
+        Column("version", Integer)
+    ])
+
+    with sis_with_version.get_writer() as writer:
+        for row in sis_with_precision.iter_rows():
+            writer.write_row_dict(row)
 
 
 def check():

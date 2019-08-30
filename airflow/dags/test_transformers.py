@@ -2,7 +2,7 @@
 
 from unittest import TestCase
 
-from operators import extract_basias_cadastre_section, \
+from transformers.basias_transformers import extract_basias_cadastre_section, \
     extract_basias_cadastre_numeros
 
 

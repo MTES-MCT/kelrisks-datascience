@@ -66,10 +66,14 @@ with DAG("prepare_basol",
         task_id="add_communes",
         python_callable=recipes.add_communes)
 
+    add_version = PythonOperator(
+        task_id="add_version",
+        python_callable=recipes.add_version)
+
     stage = CopyTableOperator(
         task_id="stage",
         postgres_conn_id=CONN_ID,
-        source="etl.basol_with_commune",
+        source="etl.basol_with_version",
         destination="etl.basol")
 
     check = PythonOperator(
@@ -82,6 +86,6 @@ with DAG("prepare_basol",
 
     load >> geocode >> normalize_precision >> merge_geog >> intersect
 
-    [merge_cadastre, intersect] >> add_parcels >> add_communes
+    [merge_cadastre, intersect] >> add_parcels >> add_communes >> add_version
 
-    add_communes >> stage >> check
+    add_version >> stage >> check

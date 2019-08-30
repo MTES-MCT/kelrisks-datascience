@@ -137,9 +137,7 @@ def geocode():
                         row["adresse_id"] = None
                     writer.write_row_dict(row)
             except Exception as e:
-                import json
                 print(e)
-                print(json.dumps(rows, indent=4))
 
 
 def merge_geog():
@@ -196,7 +194,7 @@ def merge_geog():
             output_row = {
                 **row2dict(row),
                 "geog": None,
-                "precision": None,
+                "geog_precision": None,
                 "geog_source": None}
             if p_lambert2_etendue is not None:
                 # assert this data is accurate
@@ -204,7 +202,7 @@ def merge_geog():
                 output_row["geog_precision"] = precisions.PARCEL
                 output_row["geog_source"] = "lambert2_etendue"
             elif p_adresse is not None and row.precision_adresse == "numéro":
-                output_row["geog"] = p_lambert2_etendue
+                output_row["geog"] = p_adresse
                 output_row["geog_precision"] = precisions.HOUSENUMBER
                 output_row["geog_source"] = "adresse"
             elif p_geocoded is not None and row.geocoded_result_score > 0.6 \
@@ -297,7 +295,7 @@ def join_localisation_cadastre():
             if cadastre_geog is not None:
                 # replace geog with cadastre geog
                 row.geog = cadastre_geog
-                row.precision = precisions.PARCEL
+                row.geog_precision = precisions.PARCEL
                 row.geog_source = "cadastre"
             writer.write_row_dict(row2dict(row))
 
@@ -521,7 +519,7 @@ def add_commune():
 
             if row.geog is None:
                 row.geog = commune
-                row.precision = precisions.MUNICIPALITY
+                row.geog_precision = precisions.MUNICIPALITY
                 row.geog_source = "numero_insee"
 
             writer.write_row_dict(row2dict(row))
@@ -534,7 +532,7 @@ def add_version():
 
     # Input dataset
     basias_sites_localisation_joined = Dataset(
-        "etl", "basias_sites_localisation_joined")
+        "etl", "basias_sites_with_commune")
 
     # Output dataset
     basias_sites_with_version = Dataset(
