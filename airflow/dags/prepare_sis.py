@@ -25,6 +25,10 @@ with DAG("prepare_sis",
         task_id="load",
         python_callable=recipes.load_sis)
 
+    filter_departements = PythonOperator(
+        task_id="filter_departements",
+        python_callable=recipes.filter_departements)
+
     geocode = PythonOperator(
         task_id="geocode",
         python_callable=recipes.geocode)
@@ -47,4 +51,5 @@ with DAG("prepare_sis",
         task_id="check",
         python_callable=recipes.check)
 
-    start >> load >> geocode >> set_precision >> stage >> check
+    start >> load >> filter_departements >> \
+        geocode >> set_precision >> stage >> check

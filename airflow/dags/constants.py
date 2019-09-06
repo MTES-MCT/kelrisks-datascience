@@ -6,7 +6,7 @@ LAMBERT2 = 27572
 LAMBRT93 = 2154
 
 # Liste des départements français
-DEPARTMENTS = {
+DEPARTEMENTS = {
     '01': 'Ain',
     '02': 'Aisne',
     '03': 'Allier',

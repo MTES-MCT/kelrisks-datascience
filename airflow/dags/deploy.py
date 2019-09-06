@@ -24,6 +24,12 @@ with DAG("deploy",
     start = DummyOperator(
         task_id="start")
 
+    deploy_cadastre = CopyTableOperator(
+        task_id="deploy_cadastre",
+        postgres_conn_id=CONN_ID,
+        source="etl.cadastre",
+        destination="kelrisks.cadastre")
+
     deploy_sis = CopyTableOperator(
         task_id="deploy_sis",
         postgres_conn_id=CONN_ID,
@@ -35,3 +41,16 @@ with DAG("deploy",
         postgres_conn_id=CONN_ID,
         source="etl.basol",
         destination="kelrisks.basol")
+
+    deploy_basias = CopyTableOperator(
+        task_id="deploy_basias",
+        postgres_conn_id=CONN_ID,
+        source="etl.basias",
+        destination="kelrisks.basias")
+
+    deploy_s3ic = CopyTableOperator(
+        task_id="deploy_s3ic",
+        postgres_conn_id=CONN_ID,
+        source="etl.s3ic",
+        destination="kelrisks.s3ic")
+

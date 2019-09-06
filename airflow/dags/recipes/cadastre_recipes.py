@@ -4,16 +4,14 @@ import tempfile
 from urllib.request import urlretrieve
 import gzip
 import geojson
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
 
-from sqlalchemy import Column, BigInteger, String, Index
+from sqlalchemy import Column, BigInteger, String
 from geoalchemy2 import Geometry
 from shapely.geometry import shape
 from shapely import wkb
 
 from datasets import Dataset
-from constants import DEPARTMENTS, WGS84
+from constants import WGS84
 
 
 def load_cadastre_for_department(department):
@@ -55,28 +53,7 @@ def load_cadastre_for_department(department):
                     writer.write_row_dict(row)
 
 
-def load_cadastre_parallel(max_workers=5):
-
-    async def inner():
-
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-
-            tasks = [
-                loop.run_in_executor(
-                    executor,
-                    load_cadastre_for_department,
-                    departement
-                )
-                for departement in DEPARTMENTS
-            ]
-
-            return await asyncio.gather(*tasks)
-
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(inner())
-
-
-def load_cadastre():
+def create_cadastre_table():
 
     cadastre = Dataset("etl", "cadastre")
 
@@ -93,5 +70,3 @@ def load_cadastre():
     ]
 
     cadastre.write_dtype(dtype)
-
-    load_cadastre_parallel()

@@ -10,6 +10,22 @@ import transformers.basol_transformers as transformers
 from utils import row2dict
 import precisions
 from constants import LAMBERT2, WGS84
+from config import DEPARTEMENTS
+
+
+def filter_departements():
+
+    basol_source = Dataset("etl", "basol_source")
+    basol_filtered = Dataset("etl", "basol_filtered")
+
+    basol_filtered.write_dtype([
+        Column("id", BigInteger, primary_key=True, autoincrement=True),
+        *basol_source.read_dtype(primary_key="numerobasol")])
+
+    with basol_filtered.get_writer() as writer:
+        for row in basol_source.iter_rows():
+            if row["departement"] in DEPARTEMENTS:
+                writer.write_row_dict(row)
 
 
 def parse_cadastre():
@@ -123,13 +139,13 @@ def geocode():
     """ Geocode Basol adresses """
 
     # input dataset
-    basol_source = Dataset("etl", "basol_source")
+    basol_filtered = Dataset("etl", "basol_filtered")
 
     # output dataset
     basol_geocoded = Dataset("etl", "basol_geocoded")
 
     # write output schema
-    dtype = basol_source.read_dtype(
+    dtype = basol_filtered.read_dtype(
         primary_key="numerobasol")
 
     output_dtype = [
@@ -146,7 +162,7 @@ def geocode():
 
     with basol_geocoded.get_writer() as writer:
 
-        for df in basol_source.get_dataframes(chunksize=100):
+        for df in basol_filtered.get_dataframes(chunksize=100):
 
             df = df.replace({np.nan: None})
             rows = df.to_dict(orient="records")

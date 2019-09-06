@@ -17,6 +17,7 @@ from bulk_geocoding import geocode as bulk_geocode
 from constants import WGS84
 from datasets import Dataset
 import precisions
+from config import DEPARTEMENTS
 
 
 def load_sis():
@@ -70,17 +71,43 @@ def load_sis():
                         writer.write_row_dict(row)
 
 
+def filter_departements():
+    """
+    Keep only departements specified in config
+    """
+
+    # Input dataset
+    sis_source = Dataset("etl", "sis_source")
+
+    # output dataset
+    sis_filtered = Dataset("etl", "sis_filtered")
+
+    sis_filtered.write_dtype(
+        sis_source.read_dtype())
+
+    with sis_filtered.get_writer() as writer:
+        for row in sis_source.iter_rows():
+            code_insee = row["code_insee"]
+            keep_row = False
+            for departement in DEPARTEMENTS:
+                if code_insee.startswith(departement):
+                    keep_row = True
+                    break
+            if keep_row:
+                writer.write_row_dict(row)
+
+
 def geocode():
     """ Geocode adresses """
 
     # input dataset
-    sis_source = Dataset("etl", "sis_source")
+    sis_filtered = Dataset("etl", "sis_filtered")
 
     # output dataset
     sis_geocoded = Dataset("etl", "sis_geocoded")
 
     # write output schema
-    dtype = sis_source.read_dtype()
+    dtype = sis_filtered.read_dtype()
 
     output_dtype = [
         *dtype,
@@ -95,7 +122,7 @@ def geocode():
 
     with sis_geocoded.get_writer() as writer:
 
-        for df in sis_source.get_dataframes(chunksize=100):
+        for df in sis_filtered.get_dataframes(chunksize=100):
 
             df = df.replace({np.nan: None})
             rows = df.to_dict(orient="records")
@@ -136,12 +163,12 @@ def set_precision():
     """ add fields geog_precision and geog_source """
 
     # Input dataset
-    sis_source = Dataset("etl", "sis_geocoded")
+    sis_geocoded = Dataset("etl", "sis_geocoded")
 
     # Output dataset
     sis_with_precision = Dataset("etl", "sis_with_precision")
 
-    dtype = sis_source.read_dtype()
+    dtype = sis_geocoded.read_dtype()
     sis_with_precision.write_dtype([
         *dtype,
         Column("geog_precision", String),
@@ -149,7 +176,7 @@ def set_precision():
 
     with sis_with_precision.get_writer() as writer:
 
-        for row in sis_source.iter_rows():
+        for row in sis_geocoded.iter_rows():
 
             output_row = {
                 **row,
@@ -189,6 +216,6 @@ def check():
 
     count = session.query(SIS).count()
 
-    assert count == 656
+    assert count > 0
 
     session.close()

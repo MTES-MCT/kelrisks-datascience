@@ -1,5 +1,6 @@
 # -*- coding=utf-8 -*-
 
+import re
 import numpy as np
 from sqlalchemy import Column, BigInteger, Float, String, \
     Integer, func
@@ -10,7 +11,55 @@ from datasets import Dataset
 from utils import merge_dtype, row2dict
 import precisions
 from constants import LAMBERT2, WGS84
+from config import DEPARTEMENTS
 import transformers.basias_transformers as transformers
+
+
+def filter_departements():
+    """
+    Keep only departements specified in config
+    """
+
+    # input datasets
+    basias_sites_source = Dataset("etl", "basias_sites_source")
+    basias_localisation_source = Dataset("etl", "basias_localisation_source")
+    basias_cadastre_source = Dataset("etl", "basias_cadastre_source")
+
+    # output datasets
+    basias_sites_filtered = Dataset("etl", "basias_sites_filtered")
+    basias_localisation_filtered = Dataset(
+        "etl", "basias_localisation_filtered")
+    basias_cadastre_filtered = Dataset("etl", "basias_cadastre_filtered")
+
+    datasets = [
+        (basias_sites_source, basias_sites_filtered),
+        (basias_localisation_source, basias_localisation_filtered),
+        (basias_cadastre_source, basias_cadastre_filtered)]
+
+    r = re.compile("[A-Z]{3}(\d{2})\d{4}")
+
+    def keep_row(row):
+        m = r.match(row["indice_departemental"])
+        if m:
+            groups = m.groups()
+            if groups:
+                departement = groups[0]
+                if departement in DEPARTEMENTS:
+                    return True
+        return False
+
+    for (source, filtered) in datasets:
+
+        # write output schemas
+        filtered.write_dtype([
+            Column("id", BigInteger(), primary_key=True, autoincrement=True),
+            *source.read_dtype(
+                primary_key="indice_departemental")])
+
+        with filtered.get_writer() as writer:
+            for row in source.iter_rows():
+                if keep_row(row):
+                    writer.write_row_dict(row)
 
 
 def prepare_sites():
@@ -20,7 +69,7 @@ def prepare_sites():
     """
 
     # input dataset
-    basias_sites_source = Dataset("etl", "basias_sites_source")
+    basias_sites_filtered = Dataset("etl", "basias_sites_filtered")
 
     # output dataset
     basias_sites_prepared = Dataset("etl", "basias_sites_prepared")
@@ -31,8 +80,7 @@ def prepare_sites():
         "nom_usuel",
         "raison_sociale"]
 
-    dtype = basias_sites_source.read_dtype(
-        primary_key="indice_departemental")
+    dtype = basias_sites_filtered.read_dtype()
 
     # transform schema
     output_dtype = [
@@ -52,7 +100,7 @@ def prepare_sites():
 
     # transform data
     with basias_sites_prepared.get_writer() as writer:
-        for row in basias_sites_source.iter_rows():
+        for row in basias_sites_filtered.iter_rows():
             output_row = dict(
                 (key, row[key])
                 for key in row
@@ -63,18 +111,17 @@ def prepare_sites():
 def geocode():
 
     # input dataset
-    basias_localisation_source = Dataset("etl", "basias_localisation_source")
+    basias_localisation_filtered = Dataset(
+        "etl", "basias_localisation_filtered")
 
     # output dataset
     basias_localisation_geocoded = Dataset(
         "etl", "basias_localisation_geocoded")
 
     # write output schema
-    dtype = basias_localisation_source.read_dtype(
-        primary_key="indice_departemental")
+    dtype = basias_localisation_filtered.read_dtype()
 
     output_dtype = [
-        Column("id", BigInteger(), primary_key=True, autoincrement=True),
         *dtype,
         Column("geocoded_latitude", Float(precision=10)),
         Column("geocoded_longitude", Float(precision=10)),
@@ -87,7 +134,7 @@ def geocode():
 
     with basias_localisation_geocoded.get_writer() as writer:
 
-        for df in basias_localisation_source.get_dataframes(chunksize=50):
+        for df in basias_localisation_filtered.get_dataframes(chunksize=50):
 
             df = df.replace({np.nan: None})
 
@@ -310,19 +357,19 @@ def parse_cadastre():
     """
 
     # input dataset
-    basias_cadastre_source = Dataset("etl", "basias_cadastre_source")
-    basias_localisation_source = Dataset("etl", "basias_localisation_source")
+    basias_cadastre_filtered = Dataset(
+        "etl", "basias_cadastre_filtered")
+    basias_localisation_filtered = Dataset(
+        "etl", "basias_localisation_filtered")
 
     # output dataset
     basias_cadastre_parsed = Dataset("etl", "basias_cadastre_parsed")
 
     # join basias_cadastre with basias_sites to get numero_insee
-    BasiasCadastreSource = basias_cadastre_source.reflect(
-        primary_key="indice_departemental")
-    BasiasLocalisationSource = basias_localisation_source.reflect(
-        primary_key="indice_departemental")
+    BasiasCadastreFiltered = basias_cadastre_filtered.reflect()
+    BasiasLocalisationFiltered = basias_localisation_filtered.reflect()
 
-    session = basias_cadastre_source.get_session()
+    session = basias_cadastre_filtered.get_session()
 
     # write output schema
     output_dtype = [
@@ -337,11 +384,11 @@ def parse_cadastre():
     # We need to join with basias_localiation_source because the table
     # basias_cadastre_source does not contains insee code
     q = session \
-        .query(BasiasCadastreSource, BasiasLocalisationSource.numero_insee) \
+        .query(BasiasCadastreFiltered, BasiasLocalisationFiltered.numero_insee) \
         .join(
-            BasiasLocalisationSource,
-            BasiasCadastreSource.indice_departemental ==
-            BasiasLocalisationSource.indice_departemental) \
+            BasiasLocalisationFiltered,
+            BasiasCadastreFiltered.indice_departemental ==
+            BasiasLocalisationFiltered.indice_departemental) \
         .all()
 
     with basias_cadastre_parsed.get_writer() as writer:

@@ -1,7 +1,7 @@
 # -*- coding=utf-8 -*-
 
 
-from sqlalchemy import Column, BigInteger, Float, String, func
+from sqlalchemy import Column, BigInteger, Float, String, Integer, func
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
 from shapely import wkb
@@ -12,6 +12,8 @@ from datasets import Dataset
 from constants import WGS84, LAMBRT93
 from utils import row2dict
 from scrapers import IcpeScraper, fetch_parallel
+import precisions
+from config import DEPARTEMENTS
 import precisions
 
 
@@ -134,10 +136,38 @@ def stack():
 
             writer.write_row_dict(row)
 
+    with s3ic_stacked.get_writer() as writer:
         for row in s3ic_idf_with_geog.iter_rows():
             del row["id"]
             row["epsg"] = LAMBRT93
             writer.write_row_dict(row)
+
+
+def filter_departements():
+    """
+    Keep only departements specified in config
+    """
+
+    # input dataset
+    s3ic_stacked = Dataset("etl", "s3ic_stacked")
+
+    # output dataset
+    s3ic_filtered = Dataset("etl", "s3ic_filtered")
+
+    s3ic_filtered.write_dtype(
+        s3ic_stacked.read_dtype())
+
+    def keep_row(row):
+        for departement in DEPARTEMENTS:
+            code_insee = row.get("code_insee")
+            if code_insee and code_insee.startswith(departement):
+                return True
+        return False
+
+    with s3ic_filtered.get_writer() as writer:
+        for row in s3ic_stacked.iter_rows():
+            if keep_row(row):
+                writer.write_row_dict(row)
 
 
 def scrap_adresses():
@@ -147,16 +177,16 @@ def scrap_adresses():
     """
 
     # input dataset
-    s3ic_stacked = Dataset("etl", "s3ic_stacked")
+    s3ic_filtered = Dataset("etl", "s3ic_filtered")
 
     # output dataset
     s3ic_scraped = Dataset("etl", "s3ic_scraped")
 
-    s3ic_scraped.write_dtype(s3ic_stacked.read_dtype())
+    s3ic_scraped.write_dtype(s3ic_filtered.read_dtype())
 
     with s3ic_scraped.get_writer() as writer:
 
-        for df in s3ic_stacked.get_dataframes(chunksize=100):
+        for df in s3ic_filtered.get_dataframes(chunksize=100):
 
             filtered = df.loc[
                 (df["precision"] == "Centroïde Commune")
@@ -252,3 +282,213 @@ def geocode():
                     writer.write_row_dict(row)
             except Exception as e:
                 print(e)
+
+
+def normalize_precision():
+    """ normalize precision fields """
+
+    # input dataset
+    s3ic_geocoded = Dataset("etl", "s3ic_geocoded")
+
+    # output dataset
+    s3ic_normalized = Dataset("etl", "s3ic_normalized")
+
+    dtype = s3ic_geocoded.read_dtype()
+    s3ic_normalized.write_dtype(dtype)
+
+    with s3ic_normalized.get_writer() as writer:
+
+        for row in s3ic_geocoded.iter_rows():
+
+            mapping = {
+                "Coordonnées précises": precisions.PARCEL,
+                "Coordonnée précise": precisions.PARCEL,
+                "Valeur Initiale": precisions.PARCEL,
+                "Adresse postale": precisions.HOUSENUMBER,
+                "Centroïde Commune": precisions.MUNICIPALITY,
+                "Inconnu": precisions.MUNICIPALITY
+            }
+            precision = row.get("precision")
+            if precision:
+                row["precision"] = mapping.get(precision)
+            else:
+                row["precision"] = precisions.MUNICIPALITY
+
+            writer.write_row_dict(row)
+
+
+def merge_geog():
+    """ choose best geography field """
+
+    # input dataset
+    s3ic_normalized = Dataset("etl", "s3ic_normalized")
+
+    # output dataset
+    s3ic_merged = Dataset("etl", "s3ic_geog_merged")
+
+    dtype = s3ic_normalized.read_dtype()
+
+    dtype = [c for c in dtype if c.name not in ("geog", "precision")]
+
+    output_dtype = [
+        *dtype,
+        Column("geog", Geometry(srid=4326)),
+        Column("geog_precision", String),
+        Column("geog_source", String)]
+
+    s3ic_merged.write_dtype(output_dtype)
+
+    S3icNormalized = s3ic_normalized.reflect()
+
+    session = s3ic_normalized.get_session()
+
+    point_geocoded = func.ST_setSRID(
+        func.ST_MakePoint(
+            S3icNormalized.geocoded_longitude,
+            S3icNormalized.geocoded_latitude), WGS84)
+
+    q = session.query(S3icNormalized, point_geocoded).all()
+
+    with s3ic_merged.get_writer() as writer:
+
+        for (row, point) in q:
+
+            output_row = {
+                **row2dict(row),
+                "geog_precision": row.precision,
+                "geog_source": "initial_data"
+            }
+
+            del output_row["precision"]
+
+            c1 = row.precision not in \
+                (precisions.HOUSENUMBER, precisions.PARCEL)
+            c2 = row.geocoded_latitude and row.geocoded_longitude
+            c3 = row.geocoded_result_score and row.geocoded_result_score > 0.6
+            c4 = row.geocoded_result_type == precisions.HOUSENUMBER
+
+            if c1 and c2 and c3 and c4:
+                output_row["geog"] = point
+                output_row["geog_precision"] = row.geocoded_result_type
+                output_row["geog_source"] = "geocodage"
+
+            writer.write_row_dict(output_row)
+
+    session.close()
+
+
+def intersect():
+    """
+    Find the closest parcelle to the point and set it as
+    new geography
+    """
+
+    # Input dataset
+    s3ic_geog_merged = Dataset("etl", "s3ic_geog_merged")
+    cadastre = Dataset("etl", "cadastre")
+
+    # Output dataset
+    s3ic_intersected = Dataset("etl", "s3ic_intersected")
+
+    dtype = s3ic_geog_merged.read_dtype()
+    s3ic_intersected.write_dtype(dtype)
+
+    Cadastre = cadastre.reflect()
+
+    S3icGeogMerged = s3ic_geog_merged.reflect()
+    session = s3ic_geog_merged.get_session()
+
+    stmt = session.query(Cadastre.geog) \
+                  .filter(func.st_dwithin(
+                      Cadastre.geog,
+                      S3icGeogMerged.geog,
+                      0.0001)) \
+                  .order_by(func.st_distance(
+                      Cadastre.geog,
+                      S3icGeogMerged.geog)) \
+                  .limit(1) \
+                  .label("nearest")
+
+    q = session.query(S3icGeogMerged, stmt).all()
+
+    with s3ic_intersected.get_writer() as writer:
+        for (row, cadastre_geog) in q:
+            if cadastre_geog is not None \
+               and row.geog_precision != precisions.MUNICIPALITY:
+                row.geog = cadastre_geog
+            writer.write_row_dict(row2dict(row))
+
+    session.close()
+
+
+def add_communes():
+    """
+    set commune geog for all records where geog is not set with
+    a better precision
+    """
+
+    # input dataset
+    s3ic_intersected = Dataset("etl", "s3ic_intersected")
+    communes = Dataset("etl", "commune")
+
+    # output dataset
+    s3ic_with_commune = Dataset("etl", "s3ic_with_commune")
+
+    dtype = s3ic_intersected.read_dtype()
+    s3ic_with_commune.write_dtype(dtype)
+
+    S3icIntersected = s3ic_intersected.reflect()
+    Commune = communes.reflect()
+
+    session = s3ic_intersected.get_session()
+
+    q = session.query(S3icIntersected, Commune.geog) \
+               .join(Commune,
+                     S3icIntersected.code_insee == Commune.insee) \
+               .all()
+
+    with s3ic_with_commune.get_writer() as writer:
+
+        for (row, commune) in q:
+
+            if row.geog_precision == precisions.MUNICIPALITY:
+                row.geog = commune
+                row.precision = precisions.MUNICIPALITY
+                row.geog_source = "code_insee"
+
+            writer.write_row_dict(row2dict(row))
+
+    session.close()
+
+
+def add_version():
+    """ Add a version column for compatibility with Spring """
+
+    # Input dataset
+    s3ic_with_commune = Dataset("etl", "s3ic_with_commune")
+
+    # Output dataset
+    s3ic_with_version = Dataset("etl", "s3ic_with_version")
+
+    s3ic_with_version.write_dtype([
+        *s3ic_with_commune.read_dtype(),
+        Column("version", Integer)
+    ])
+
+    with s3ic_with_version.get_writer() as writer:
+        for row in s3ic_with_commune.iter_rows():
+            writer.write_row_dict(row)
+
+
+def check():
+
+    s3ic = Dataset("etl", "s3ic")
+
+    S3ic = s3ic.reflect()
+
+    session = s3ic.get_session()
+
+    count = session.query(S3ic).count()
+
+    assert count > 0
+

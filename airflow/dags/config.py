@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import constants
 
 
 class ImproperlyConfigured(Exception):
@@ -15,10 +16,17 @@ def get_env_setting(setting):
         raise ImproperlyConfigured(error_msg)
 
 
+# List of departements to load
+departements = get_env_setting("DEPARTEMENTS")
+if departements == "all":
+    DEPARTEMENTS = constants.DEPARTEMENTS
+else:
+    departements = departements.split(",")
+    DEPARTEMENTS = {k: constants.DEPARTEMENTS[k] for k in departements}
+
 # Airflow connection defined as environement variables
 # See https://airflow.apache.org/howto/connection/index.html
 CONN_ID = "postgres_kelrisks"
-
 
 # directories structure
 ROOT_DIR = get_env_setting("ROOT_DIR")

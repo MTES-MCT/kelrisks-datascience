@@ -45,6 +45,11 @@ with DAG("prepare_basias",
         task_id="load_cadastre",
         embulk_config="basias_cadastre.yml.liquid")
 
+    # Keep only departements specified in config
+    filter_departements = PythonOperator(
+        task_id="filter_departements",
+        python_callable=recipes.filter_departements)
+
     parse_cadastre = PythonOperator(
         task_id="parse_cadastre",
         python_callable=recipes.parse_cadastre)
@@ -102,13 +107,13 @@ with DAG("prepare_basias",
     start >> download >> [
         load_sites,
         load_localisation,
-        load_cadastre]
+        load_cadastre] >> filter_departements
 
-    load_sites >> prepare_sites
+    filter_departements >> prepare_sites
 
-    load_localisation >> geocode >> merge_geog >> intersect
+    filter_departements >> geocode >> merge_geog >> intersect
 
-    load_cadastre >> parse_cadastre >> add_geog >> merge_cadastre_geog
+    filter_departements >> parse_cadastre >> add_geog >> merge_cadastre_geog
 
     [intersect, merge_cadastre_geog] >> join_localisation_cadastre
 

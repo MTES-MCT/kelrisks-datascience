@@ -6,7 +6,7 @@ from datetime import datetime
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from airflow.operators.data_preparation import DownloadUnzipOperator, \
-    Shp2pgsqlOperator
+    Shp2pgsqlOperator, CopyTableOperator
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.data_preparation import EmbulkOperator
 
@@ -60,6 +60,11 @@ with DAG("prepare_s3ic",
         task_id="stack",
         python_callable=recipes.stack)
 
+    # Keep only departements specified in config
+    filter_departements = PythonOperator(
+        task_id="filter_departements",
+        python_callable=recipes.filter_departements)
+
     # Scrap adresses
     scrap_adresses = PythonOperator(
         task_id="scrap_adresses",
@@ -69,3 +74,44 @@ with DAG("prepare_s3ic",
     geocode = PythonOperator(
         task_id="geocode",
         python_callable=recipes.geocode)
+
+    # Normalize field precision
+    normalize_precision = PythonOperator(
+        task_id="normalize_precision",
+        python_callable=recipes.normalize_precision)
+
+    # Pick best geog field
+    merge_geog = PythonOperator(
+        task_id="merge_geog",
+        python_callable=recipes.merge_geog)
+
+    intersect = PythonOperator(
+        task_id="intersect",
+        python_callable=recipes.intersect)
+
+    add_communes = PythonOperator(
+        task_id="add_communes",
+        python_callable=recipes.add_communes)
+
+    add_version = PythonOperator(
+        task_id="add_version",
+        python_callable=recipes.add_version)
+
+    stage = CopyTableOperator(
+        task_id="stage",
+        postgres_conn_id=CONN_ID,
+        source="etl.s3ic_with_version",
+        destination="etl.s3ic")
+
+    check = PythonOperator(
+        task_id="check",
+        python_callable=recipes.check)
+
+    start >> download >> [load_shp, load_idf]
+
+    load_idf >> create_geog_idf
+
+    load_shp >> filter_idf
+
+    [create_geog_idf, filter_idf] >> stack >> filter_departements >> \
+        scrap_adresses >> geocode >> merge_geog >> add_communes >> check

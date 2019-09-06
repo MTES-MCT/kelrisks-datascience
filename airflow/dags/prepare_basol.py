@@ -30,6 +30,10 @@ with DAG("prepare_basol",
         task_id="load",
         embulk_config="basol.yml.liquid")
 
+    filter_departements = PythonOperator(
+        task_id="filter_departements",
+        python_callable=recipes.filter_departements)
+
     parse_cadastre = PythonOperator(
         task_id="parse_cadastre",
         python_callable=recipes.parse_cadastre)
@@ -80,11 +84,12 @@ with DAG("prepare_basol",
         task_id="check",
         python_callable=recipes.check)
 
-    start >> download >> load
+    start >> download >> load >> filter_departements
 
-    load >> parse_cadastre >> join_cadastre >> merge_cadastre
+    filter_departements >> parse_cadastre >> join_cadastre >> merge_cadastre
 
-    load >> geocode >> normalize_precision >> merge_geog >> intersect
+    filter_departements >> geocode >> normalize_precision \
+        >> merge_geog >> intersect
 
     [merge_cadastre, intersect] >> add_parcels >> add_communes >> add_version
 
