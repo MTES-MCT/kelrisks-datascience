@@ -9,7 +9,7 @@ from airflow.operators.dummy_operator import DummyOperator
 
 import helpers
 import recipes.cadastre_recipes as recipes
-from config import CONN_ID, DEPARTEMENTS
+from config import CONN_ID, DEPARTEMENTS, CADASTRE_CONCURRENCY
 
 
 default_args = helpers.default_args({"start_date": datetime(2019, 6, 11, 5)})
@@ -18,7 +18,7 @@ default_args = helpers.default_args({"start_date": datetime(2019, 6, 11, 5)})
 with DAG("prepare_cadastre",
          default_args=default_args,
          schedule_interval=None,
-         concurrency=3) as dag:
+         concurrency=CADASTRE_CONCURRENCY) as dag:
 
     start = DummyOperator(task_id="start")
 
