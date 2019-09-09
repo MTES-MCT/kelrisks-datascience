@@ -27,7 +27,8 @@ RUN apt-get update -yqq \
     wget \
     unzip \
     postgresql-client \
-    postgis
+    postgis \
+    net-tools
 
 # Embulk
 ENV EMBULK_BIN /usr/local/bin/embulk
