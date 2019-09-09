@@ -39,12 +39,12 @@ in:
     - {name: commentaire, type: string}
 out:
   type: postgresql
-  host: {{ env.POSTGRES_HOST }}
-  user: {{ env.POSTGRES_USER }}
-  password: {{ env.POSTGRES_PASSWORD }}
-  port: {{ env.POSTGRES_PORT }}
-  ssl: {{ env.POSTGRES_SSL_ON }}
-  database: {{ env.POSTGRES_DB }}
+  host: {{ env.KELRISKS_POSTGRES_HOST }}
+  user: {{ env.KELRISKS_POSTGRES_USER }}
+  password: {{ env.KELRISKS_POSTGRES_PASSWORD }}
+  port: {{ env.KELRISKS_POSTGRES_PORT }}
+  ssl: {{ env.KELRISKS_POSTGRES_SSL_ON }}
+  database: {{ env.KELRISKS_POSTGRES_DB }}
   table: basias_localisation_source
   schema: etl
   options: {loglevel: 2}
