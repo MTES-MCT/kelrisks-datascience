@@ -1,0 +1,99 @@
+in:
+  type: file
+  path_prefix: {{ env.DATA_DIR }}/basol
+  parser:
+    charset: UTF-8
+    newline: LF
+    type: csv
+    delimiter: ;
+    quote: '"'
+    escape: '"'
+    trim_if_not_quoted: false
+    skip_header_lines: 1
+    allow_extra_columns: true
+    allow_optional_columns: false
+    columns:
+    - {name: sp1_region, type: string}
+    - {name: sp1_dept, type: string}
+    - {name: sp1_num, type: long}
+    - {name: numero_basol, type: string}
+    - {name: numero_gidic, type: string}
+    - {name: sp1_idbasias, type: string}
+    - {name: date_publication, type: string}
+    - {name: sp1_sis, type: string}
+    - {name: sp2_etat, type: string}
+    - {name: georeferencement, type: string}
+    - {name: sp1_x, type: long}
+    - {name: sp1_y, type: long}
+    - {name: l2e_precision, type: string}
+    - {name: sp1_x93, type: long}
+    - {name: sp1_y93, type: long}
+    - {name: second_georef_precision, type: string}
+    - {name: sp1_cadastre_multi, type: string}
+    - {name: sp1_adresse, type: string}
+    - {name: sp1_lieudit, type: string}
+    - {name: nom_commune, type: string}
+    - {name: sp1_insee, type: string}
+    - {name: nom_arrondissement, type: string}
+    - {name: sp1_site, type: string}
+    - {name: prec_coord, type: long}
+out:
+  type: postgresql
+  host: {{ env.KELRISKS_POSTGRES_HOST }}
+  user: {{ env.KELRISKS_POSTGRES_USER }}
+  password: {{ env.KELRISKS_POSTGRES_PASSWORD }}
+  port: {{ env.KELRISKS_POSTGRES_PORT }}
+  ssl: {{ env.KELRISKS_POSTGRES_SSL_ON }}
+  database: {{ env.KELRISKS_POSTGRES_DB }}
+  table: basol_source
+  schema: etl
+  options: {loglevel: 2}
+  mode: replace
+  column_options:
+    region: {type: VARCHAR(255)}
+    departement: {type: VARCHAR(255)}
+    num: {type: INT4}
+    numerobasol: {type: VARCHAR(255)}
+    numerogidic: {type: VARCHAR(255)}
+    identifiantbasias: {type: VARCHAR(255)}
+    date_publication : {type: DATE}
+    sis: {type: VARCHAR(255)}
+    etat: {type: TEXT}
+    georeferencement: {type: TEXT}
+    coordxlambertii: {type: DOUBLE PRECISION}
+    coordylambertii: {type: DOUBLE PRECISION}
+    l2e_precision : {type: TEXT}
+    coordxlambert93: {type: DOUBLE PRECISION}
+    coordylambert93: {type: DOUBLE PRECISION}
+    l93_precision: {type: TEXT}
+    cadastre_multi: {type: TEXT}
+    adresse: {type: TEXT}
+    lieu_dit: {type: TEXT}
+    commune: {type: VARCHAR(255)}
+    code_insee: {type: VARCHAR(255)}
+    arrondissement: {type: VARCHAR(255)}
+    proprietaire: {type: TEXT}
+    prec_coord: {type: int4}
+filters:
+  - type: rename
+    columns:
+      sp1_region: region
+      sp1_dept: departement
+      sp1_num: num
+      numero_basol: numerobasol
+      numero_gidic: numerogidic
+      sp1_sis: sis
+      sp2_etat: etat
+      sp1_idbasias: identifiantbasias
+      sp1_x: coordxlambertii
+      sp1_y: coordylambertii
+      sp1_x93: coordxlambert93
+      sp1_y93: coordylambert93
+      second_georef_precision: l93_precision
+      sp1_cadastre_multi: cadastre_multi
+      sp1_adresse: adresse
+      sp1_lieudit: lieu_dit
+      nom_commune: commune
+      sp1_insee: code_insee
+      nom_arrondissement: arrondissement
+      sp1_site: proprietaire
