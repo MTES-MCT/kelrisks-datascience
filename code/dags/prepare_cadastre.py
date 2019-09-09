@@ -17,7 +17,8 @@ default_args = helpers.default_args({"start_date": datetime(2019, 6, 11, 5)})
 
 with DAG("prepare_cadastre",
          default_args=default_args,
-         schedule_interval=None) as dag:
+         schedule_interval=None,
+         concurrency=3) as dag:
 
     start = DummyOperator(task_id="start")
 
