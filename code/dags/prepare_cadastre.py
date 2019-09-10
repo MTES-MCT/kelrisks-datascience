@@ -43,4 +43,11 @@ with DAG("prepare_cadastre",
     #         ON etl.cadastre (commune, prefixe, section, numero)"""),
     #     postgres_conn_id=CONN_ID)
 
+    # create_index = PostgresOperator(
+    #     task_id="create_index_code",
+    #     sql=textwrap.dedent("""
+    #         CREATE INDEX cadastre_code_idx
+    #         ON etl.cadastre (code)"""),
+    #     postgres_conn_id=CONN_ID)
+
     start >> create_cadastre_table >> load_departements
