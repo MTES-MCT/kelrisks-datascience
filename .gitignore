@@ -119,3 +119,6 @@ venv.bak/
 
 # divers
 install.sh
+
+# reports output
+code/dags/qualite.md
