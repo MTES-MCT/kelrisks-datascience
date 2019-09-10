@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime
+import textwrap
 
 from airflow import DAG
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python_operator import PythonOperator
+from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.data_preparation import EmbulkOperator, \
     DownloadUnzipOperator, CopyTableOperator
 
@@ -92,6 +94,13 @@ with DAG("prepare_basias",
         task_id="add_version",
         python_callable=recipes.add_version)
 
+    create_address_id_index = PostgresOperator(
+        task_id="create_address_id_index",
+        postgres_conn_id=CONN_ID,
+        sql=textwrap.dedent("""
+            CREATE INDEX basias_sites_adresse_id_idx
+            ON etl.basias_sites_with_version (adresse_id)"""))
+
     stage = CopyTableOperator(
         task_id="stage",
         postgres_conn_id=CONN_ID,
@@ -116,4 +125,5 @@ with DAG("prepare_basias",
     [intersect, merge_cadastre_geog] >> join_localisation_cadastre
 
     [join_localisation_cadastre, prepare_sites] >> join_sites_localisation \
-        >> add_commune >> add_version >> stage >> check
+        >> add_commune >> add_version >> create_address_id_index \
+        >> stage >> check

@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime
+import textwrap
 
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from airflow.operators.data_preparation import DownloadUnzipOperator, \
     EmbulkOperator, CopyTableOperator
+from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.dummy_operator import DummyOperator
 
 import helpers
@@ -74,6 +76,13 @@ with DAG("prepare_basol",
         task_id="add_version",
         python_callable=recipes.add_version)
 
+    create_address_id_index = PostgresOperator(
+        task_id="create_address_id_index",
+        postgres_conn_id=CONN_ID,
+        sql=textwrap.dedent("""
+            CREATE INDEX basol_adresse_id_idx
+            ON etl.basol_with_version (adresse_id)"""))
+
     stage = CopyTableOperator(
         task_id="stage",
         postgres_conn_id=CONN_ID,
@@ -93,4 +102,4 @@ with DAG("prepare_basol",
 
     [merge_cadastre, intersect] >> add_parcels >> add_communes >> add_version
 
-    add_version >> stage >> check
+    add_version >> create_address_id_index >> stage >> check

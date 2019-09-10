@@ -2,9 +2,11 @@
 
 import os
 from datetime import datetime
+import textwrap
 
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
+from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.data_preparation import DownloadUnzipOperator, \
     Shp2pgsqlOperator, CopyTableOperator
 from airflow.operators.dummy_operator import DummyOperator
@@ -97,6 +99,13 @@ with DAG("prepare_s3ic",
         task_id="add_version",
         python_callable=recipes.add_version)
 
+    create_address_id_index = PostgresOperator(
+        task_id="create_address_id_index",
+        postgres_conn_id=CONN_ID,
+        sql=textwrap.dedent("""
+            CREATE INDEX s3ic_adresse_id_idx
+            ON etl.s3ic_with_version (adresse_id)"""))
+
     stage = CopyTableOperator(
         task_id="stage",
         postgres_conn_id=CONN_ID,
@@ -115,4 +124,5 @@ with DAG("prepare_s3ic",
 
     [create_geog_idf, filter_idf] >> stack >> filter_departements >> \
         scrap_adresses >> geocode >> normalize_precision >> merge_geog >> \
-        intersect >> add_communes >> add_version >> stage >> check
+        intersect >> add_communes >> add_version >> create_address_id_index \
+        >> stage >> check
