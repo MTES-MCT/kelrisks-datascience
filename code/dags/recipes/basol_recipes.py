@@ -382,7 +382,8 @@ def add_communes():
 
     q = session.query(BasolWithParcels, Commune.geog) \
                .join(Commune,
-                     BasolWithParcels.code_insee == Commune.insee) \
+                     BasolWithParcels.code_insee == Commune.insee,
+                     isouter=True) \
                .all()
 
     with basol_with_communes.get_writer() as writer:

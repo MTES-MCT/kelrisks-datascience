@@ -388,7 +388,8 @@ def parse_cadastre():
         .join(
             BasiasLocalisationFiltered,
             BasiasCadastreFiltered.indice_departemental ==
-            BasiasLocalisationFiltered.indice_departemental) \
+            BasiasLocalisationFiltered.indice_departemental,
+            isouter=True) \
         .all()
 
     with basias_cadastre_parsed.get_writer() as writer:
@@ -522,7 +523,8 @@ def join_sites_localisation():
         .query(BasiasSitesPrepared, BasiasLocalisation) \
         .join(BasiasLocalisation,
               BasiasSitesPrepared.indice_departemental ==
-              BasiasLocalisation.indice_departemental) \
+              BasiasLocalisation.indice_departemental,
+              isouter=True) \
         .all()
 
     with basias_sites_localisation_joined.get_writer() as writer:
@@ -557,7 +559,8 @@ def add_commune():
 
     q = session.query(BasiasSites, Commune.geog) \
                .join(Commune,
-                     BasiasSites.numero_insee == Commune.insee) \
+                     BasiasSites.numero_insee == Commune.insee,
+                     isouter=True) \
                .all()
 
     with basias_sites_with_commune.get_writer() as writer:
