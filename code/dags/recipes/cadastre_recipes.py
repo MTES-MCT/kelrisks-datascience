@@ -5,7 +5,7 @@ from urllib.request import urlretrieve
 import gzip
 import geojson
 
-from sqlalchemy import Column, BigInteger, String
+from sqlalchemy import Column, BigInteger, String, Integer
 from geoalchemy2 import Geometry
 from shapely.geometry import shape
 from shapely import wkb
@@ -59,6 +59,7 @@ def create_cadastre_table():
 
     dtype = [
         Column("id", BigInteger(), primary_key=True, autoincrement=True),
+        Column("version", Integer),
         Column("code", String),
         Column("commune", String),
         Column("prefixe", String),

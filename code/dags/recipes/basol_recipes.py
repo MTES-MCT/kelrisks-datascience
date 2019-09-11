@@ -351,7 +351,7 @@ def add_parcels():
     with basol_with_parcels.get_writer() as writer:
         for (row, geog) in q:
             if geog is not None:
-                row.precision = precisions.PARCEL
+                row.geog_precision = precisions.PARCEL
                 row.geog_source = "cadastre"
                 row.geog = geog
             writer.write_row_dict(row2dict(row))
@@ -391,7 +391,7 @@ def add_communes():
 
             if row.geog is None:
                 row.geog = commune
-                row.precision = precisions.MUNICIPALITY
+                row.geog_precision = precisions.MUNICIPALITY
                 row.geog_source = "code_insee"
 
             writer.write_row_dict(row2dict(row))
