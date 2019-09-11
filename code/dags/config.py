@@ -31,5 +31,4 @@ CONN_ID = "postgres_kelrisks"
 # directories structure
 DATA_DIR = get_env_setting("DATA_DIR")
 
-
 CADASTRE_CONCURRENCY = int(get_env_setting("CADASTRE_CONCURRENCY"))
