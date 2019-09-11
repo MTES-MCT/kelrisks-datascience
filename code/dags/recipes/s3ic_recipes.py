@@ -289,7 +289,7 @@ def geocode():
                         "geocoded_latitude": None,
                         "geocoded_longitude": None,
                         "geocoded_result_score": None,
-                        "result_type": None,
+                        "geocoded_result_type": None,
                         "adresse_id": None}
                     writer.write_row_dict(output_row)
 
