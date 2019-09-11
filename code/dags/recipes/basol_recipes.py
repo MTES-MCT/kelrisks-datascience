@@ -422,12 +422,20 @@ def add_version():
 
 def check():
 
+    # check we have same number of records
+    # than data filtered
+
     basol = Dataset("etl", "basol")
-
     Basol = basol.reflect()
-
     session = basol.get_session()
+    basol_count = session.query(Basol).count()
+    session.close()
 
-    count = session.query(Basol).count()
+    basol_filtered = Dataset("etl", "basol_filtered")
+    BasolFiltered = basol_filtered.reflect()
+    session = basol_filtered.get_session()
+    basol_filtered_count = session.query(BasolFiltered).count()
+    session.close()
 
-    assert count > 0
+    assert basol_count > 0
+    assert basol_count == basol_filtered_count

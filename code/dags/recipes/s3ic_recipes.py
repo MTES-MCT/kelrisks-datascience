@@ -483,13 +483,20 @@ def add_version():
 
 def check():
 
+    # check we have same number of records
+    # than data filtered
+
     s3ic = Dataset("etl", "s3ic")
-
     S3ic = s3ic.reflect()
-
     session = s3ic.get_session()
+    s3ic_count = session.query(S3ic).count()
+    session.close()
 
-    count = session.query(S3ic).count()
+    s3ic_filtered = Dataset("etl", "s3ic_filtered")
+    S3icFiltered = s3ic_filtered.reflect()
+    session = s3ic_filtered.get_session()
+    s3ic_filtered_count = session.query(S3icFiltered).count()
+    session.close()
 
-    assert count > 0
-
+    assert s3ic_count > 0
+    assert s3ic_count == s3ic_filtered_count

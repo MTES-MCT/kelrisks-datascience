@@ -529,7 +529,9 @@ def join_sites_localisation():
 
     with basias_sites_localisation_joined.get_writer() as writer:
         for (site, localisation) in join_query:
-            output_row = {**row2dict(site), **row2dict(localisation)}
+            output_row = row2dict(site)
+            if localisation:
+                output_row = {**output_row, **row2dict(localisation)}
             writer.write_row_dict(output_row)
 
     session.close()
@@ -600,4 +602,21 @@ def add_version():
 
 def check():
     """ Perform sanity checks on table """
-    pass
+
+    # check we have same number of records
+    # than data filtered
+
+    basias = Dataset("etl", "basias")
+    Basias = basias.reflect()
+    session = basias.get_session()
+    basias_count = session.query(Basias).count()
+    session.close()
+
+    basias_filtered = Dataset("etl", "basias_sites_filtered")
+    BasiasFiltered = basias_filtered.reflect()
+    session = basias_filtered.get_session()
+    basias_filtered_count = session.query(BasiasFiltered).count()
+    session.close()
+
+    assert basias_count > 0
+    assert basias_count == basias_filtered_count

@@ -208,14 +208,20 @@ def add_version():
 def check():
     """ perform sanity checks on staged table """
 
+    # check we have same number of records
+    # than data filtered
+
     sis = Dataset("etl", "sis")
-
     SIS = sis.reflect()
-
     session = sis.get_session()
-
-    count = session.query(SIS).count()
-
-    assert count > 0
-
+    sis_count = session.query(SIS).count()
     session.close()
+
+    sis_filtered = Dataset("etl", "sis_filtered")
+    SISFiltered = sis_filtered.reflect()
+    session = sis_filtered.get_session()
+    sis_filtered_count = session.query(SISFiltered).count()
+    session.close()
+
+    assert sis_count > 0
+    assert sis_count == sis_filtered_count
