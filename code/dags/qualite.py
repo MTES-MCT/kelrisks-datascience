@@ -218,7 +218,9 @@ def run_report():
 
     basol_housenumber_count = basol_by_precision.get("housenumber") or 0
     basol_street_count = basol_by_precision.get("street") or 0
-    basol_municipality_count = basol_by_precision.get("municipality") or 0
+    basol_municipality_count = basol_count \
+        - basol_housenumber_count \
+        - basol_street_count
 
     basol_geocoded = Dataset("etl", "basol_geocoded")
     BasolGeocoded = basol_geocoded.reflect()
@@ -250,9 +252,9 @@ def run_report():
     Basol = basol.reflect()
     session = basol.get_session()
     basol_by_precision = dict(session.query(
-            Basol.precision,
-            func.count(Basol.precision))
-        .group_by(Basol.precision)
+            Basol.geog_precision,
+            func.count(Basol.geog_precision))
+        .group_by(Basol.geog_precision)
         .all())
     session.close()
 

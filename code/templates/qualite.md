@@ -421,12 +421,8 @@
     <td> KPI redressement des données </td>
     <!-- SIIIC -->
     <td>
-      <ul>
-        <li> Ile-de-France
-          <p> Précision des données intiales: {{ "%.1f %%" % s3ic_initial_precision }} </p>
-          <p> Précision des données après géocodage: {{ "%.1f %%" % s3ic_final_precision }} </p>
-        </li>
-      </ul>
+      <p> Précision des données intiales: {{ "%.1f %%" % s3ic_initial_precision }} </p>
+      <p> Précision des données après géocodage: {{ "%.1f %%" % s3ic_final_precision }} </p>
     </td>
     <!-- BASIAS -->
     <td>
