@@ -42,6 +42,7 @@ RUN pip install -r /tmp/requirements.txt \
   && rm /tmp/requirements.txt
 
 RUN useradd -ms /bin/bash -d ${AIRFLOW_HOME} airflow
+
 RUN chown -R airflow: ${AIRFLOW_HOME}
 
 USER airflow

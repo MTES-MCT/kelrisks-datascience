@@ -24,6 +24,7 @@ services:
     volumes:
       - ./code/dags:$AIRFLOW_HOME/dags
       - ./code/embulk:$AIRFLOW_HOME/embulk
+      - ./code/templates:$AIRFLOW_HOME/templates
     environment:
       AIRFLOW__CORE__FERNET_KEY: $AIRFLOW__CORE__FERNET_KEY
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
