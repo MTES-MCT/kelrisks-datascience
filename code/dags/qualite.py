@@ -150,21 +150,22 @@ def run_report():
         * 100.0 / s3ic_count
     session.close()
 
-    basias_localisation_source = Dataset("etl", "basias_localisation_source")
-    BasiasLocalisationSource = basias_localisation_source.reflect(
-        primary_key="indice_departemental")
-    session = basias_localisation_source.get_session()
+    basias_localisation = Dataset("etl", "basias_localisation_geog_merged")
+    BasiasLocalisation = basias_localisation.reflect()
+    session = basias_localisation.get_session()
     basias_by_precision = dict(session.query(
-            BasiasLocalisationSource.precision_adresse,
-            func.count(BasiasLocalisationSource.precision_adresse))
-        .group_by(BasiasLocalisationSource.precision_adresse)
+            BasiasLocalisation.geog_precision,
+            func.count(BasiasLocalisation.geog_precision))
+        .group_by(BasiasLocalisation.geog_precision)
         .all())
 
-    basias_parcel_count = 0
-    basias_housenumber_count = basias_by_precision.get("numéro") or 0
-    basias_street_count = basias_by_precision.get("rue") or 0
-    basias_municipality_count = basias_count - basias_housenumber_count - basias_street_count
-
+    basias_parcel_count = basias_by_precision.get("parcel") or 0
+    basias_housenumber_count = basias_by_precision.get("housenumber") or 0
+    basias_street_count = basias_by_precision.get("street") or 0
+    basias_municipality_count = basias_count \
+        - basias_parcel_count \
+        - basias_housenumber_count \
+        - basias_street_count
 
     basias_geocoded = Dataset("etl", "basias_localisation_geocoded")
     BasiasGeocoded = basias_geocoded.reflect()
