@@ -529,7 +529,8 @@ def join_sites_localisation():
 
     with basias_sites_localisation_joined.get_writer() as writer:
         for (site, localisation) in join_query:
-            output_row = row2dict(site)
+            output_row = {c.name: None for c in output_dtype}
+            output_row = {**output_row, **row2dict(site)}
             if localisation:
                 output_row = {**output_row, **row2dict(localisation)}
             writer.write_row_dict(output_row)
