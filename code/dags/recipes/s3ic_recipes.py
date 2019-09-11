@@ -243,7 +243,7 @@ def geocode():
 
     with s3ic_geocoded.get_writer() as writer:
 
-        for df in s3ic_scraped.get_dataframes(chunksize=100):
+        for df in s3ic_scraped.get_dataframes(chunksize=50):
 
             df = df.replace({np.nan: None})
 
@@ -282,6 +282,16 @@ def geocode():
                     writer.write_row_dict(row)
             except Exception as e:
                 print(e)
+                # write data without geocoding
+                for row in rows:
+                    output_row = {
+                        **row,
+                        "geocoded_latitude": None,
+                        "geocoded_longitude": None,
+                        "geocoded_result_score": None,
+                        "result_type": None,
+                        "adresse_id": None}
+                    writer.write_row_dict(output_row)
 
 
 def normalize_precision():

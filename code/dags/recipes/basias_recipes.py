@@ -533,6 +533,7 @@ def join_sites_localisation():
             output_row = {**output_row, **row2dict(site)}
             if localisation:
                 output_row = {**output_row, **row2dict(localisation)}
+            del output_row["id"]
             writer.write_row_dict(output_row)
 
     session.close()
