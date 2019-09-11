@@ -233,7 +233,7 @@ def merge_geog():
     basol_geog_merged.write_dtype([
         *basol_geocoded.read_dtype(),
         Column("geog", Geometry(srid=4326)),
-        Column("precision", String),
+        Column("geog_precision", String),
         Column("geog_source", String)])
 
     BasolGeocoded = basol_geocoded.reflect()
@@ -261,20 +261,20 @@ def merge_geog():
             output_row = {
                 **row2dict(row),
                 "geog": None,
-                "precision": None,
+                "geog_precision": None,
                 "geog_source": None
             }
 
             if row.l2e_precision == precisions.HOUSENUMBER:
 
                 output_row["geog"] = point_lambert2
-                output_row["precision"] = row.l2e_precision
+                output_row["geog_precision"] = row.l2e_precision
                 output_row["geog_source"] = "lambert2"
 
             elif (row.geocoded_result_type == precisions.HOUSENUMBER) and \
                  (row.geocoded_result_score >= 0.6):
                 output_row["geog"] = point_geocoded
-                output_row["precision"] = row.geocoded_result_type
+                output_row["geog_precision"] = row.geocoded_result_type
                 output_row["geog_source"] = "geocodage"
 
             writer.write_row_dict(output_row)

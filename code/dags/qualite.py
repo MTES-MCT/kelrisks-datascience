@@ -148,16 +148,117 @@ def run_report():
     s3ic_final_precision = (s3ic_by_geog_precision["parcel"]
                             + s3ic_by_geog_precision["housenumber"]) \
         * 100.0 / s3ic_count
-
-    # s3ic_centroide_commune_count = \
-    #     S3IC \
-    #     .select() \
-    #     .where(
-    #         (S3IC.geog.is_null()) |
-    #         (S3IC.centroide_commune)) \
-    #     .count()
-
     session.close()
+
+    basias_localisation_source = Dataset("etl", "basias_localisation_source")
+    BasiasLocalisationSource = basias_localisation_source.reflect(
+        primary_key="indice_departemental")
+    session = basias_localisation_source.get_session()
+    basias_by_precision = dict(session.query(
+            BasiasLocalisationSource.precision_adresse,
+            func.count(BasiasLocalisationSource.precision_adresse))
+        .group_by(BasiasLocalisationSource.precision_adresse)
+        .all())
+
+    basias_parcel_count = 0
+    basias_housenumber_count = basias_by_precision.get("numéro") or 0
+    basias_street_count = basias_by_precision.get("rue") or 0
+    basias_municipality_count = basias_count - basias_housenumber_count - basias_street_count
+
+
+    basias_geocoded = Dataset("etl", "basias_localisation_geocoded")
+    BasiasGeocoded = basias_geocoded.reflect()
+    session = basias_geocoded.get_session()
+
+    basias_geocoded_by_precision = dict(session.query(
+            BasiasGeocoded.geocoded_result_type,
+            func.count(BasiasGeocoded.geocoded_result_type))
+        .filter(BasiasGeocoded.geocoded_result_score > 0.6)
+        .group_by(BasiasGeocoded.geocoded_result_type)
+        .all())
+    session.close()
+
+    basias_geocoded_housenumber_count = basias_geocoded_by_precision.get("housenumber") or 0
+    basias_geocoded_street_count = basias_geocoded_by_precision.get("street") or 0
+    basias_geocoded_municipality_count = basias_count \
+        - basias_geocoded_housenumber_count \
+        - basias_geocoded_street_count
+
+    basias_cadastre_merged = Dataset("etl", "basias_cadastre_merged")
+    BasiasCadastreMerged = basias_cadastre_merged.reflect()
+    session = basias_cadastre_merged.get_session()
+    basias_extracted_parcelles_count = session.query(BasiasCadastreMerged).count()
+    session.close()
+
+    basias_initial_precision = (basias_parcel_count + basias_housenumber_count) * 100 / basias_count
+
+    basias = Dataset("etl", "basias")
+    Basias = basias.reflect()
+    session = basias.get_session()
+    basias_by_precision = dict(session.query(
+            Basias.geog_precision,
+            func.count(Basias.geog_precision))
+        .group_by(Basias.geog_precision)
+        .all())
+    session.close()
+
+    basias_final_precision = (
+        basias_by_precision["parcel"]
+        + basias_by_precision["housenumber"]) * 100 / basias_count
+
+    basol_normalized = Dataset("etl", "basol_normalized")
+    BasolNormalized = basol_normalized.reflect()
+    session = basol_normalized.get_session()
+    basol_by_precision = dict(session.query(
+            BasolNormalized.l2e_precision,
+            func.count(BasolNormalized.l2e_precision))
+        .group_by(BasolNormalized.l2e_precision)
+        .all())
+    session.close()
+
+    basol_housenumber_count = basol_by_precision.get("housenumber") or 0
+    basol_street_count = basol_by_precision.get("street") or 0
+    basol_municipality_count = basol_by_precision.get("municipality") or 0
+
+    basol_geocoded = Dataset("etl", "basol_geocoded")
+    BasolGeocoded = basol_geocoded.reflect()
+    session = basol_geocoded.get_session()
+
+    basol_geocoded_by_precision = dict(session.query(
+            BasolGeocoded.geocoded_result_type,
+            func.count(BasolGeocoded.geocoded_result_type))
+        .filter(BasolGeocoded.geocoded_result_score > 0.6)
+        .group_by(BasolGeocoded.geocoded_result_type)
+        .all())
+    session.close()
+
+    basol_geocoded_housenumber_count = basol_geocoded_by_precision.get("housenumber") or 0
+    basol_geocoded_street_count = basol_geocoded_by_precision.get("street") or 0
+    basol_geocoded_municipality_count = basol_count \
+        - basol_geocoded_housenumber_count \
+        - basol_geocoded_street_count
+
+    basol_cadastre_merged = Dataset("etl", "basol_cadastre_merged")
+    BasolCadastreMerged = basol_cadastre_merged.reflect()
+    session = basol_cadastre_merged.get_session()
+    basol_extracted_parcelles_count = session.query(BasolCadastreMerged).count()
+    session.close()
+
+    basol_initial_precision = basol_housenumber_count * 100 / basol_count
+
+    basol = Dataset("etl", "basol")
+    Basol = basol.reflect()
+    session = basol.get_session()
+    basol_by_precision = dict(session.query(
+            Basol.precision,
+            func.count(Basol.precision))
+        .group_by(Basol.precision)
+        .all())
+    session.close()
+
+    basol_final_precision = (
+        basol_by_precision["parcel"]
+        + basol_by_precision["housenumber"]) * 100 / basol_count
 
     variables = {
         's3ic_count': s3ic_count,
@@ -177,21 +278,28 @@ def run_report():
         's3ic_geocoded_hors_idf_municipality_count': s3ic_geocoded_hors_idf_municipality_count,
         's3ic_initial_precision': s3ic_initial_precision,
         's3ic_final_precision': s3ic_final_precision,
-        's3ic_precision_after_geocodage': 100,
+        'basias_count': basias_count,
+        'basias_parcel_count': basias_parcel_count,
+        'basias_housenumber_count': basias_housenumber_count,
+        'basias_street_count': basias_street_count,
+        'basias_municipality_count': basias_municipality_count,
+        'basias_geocoded_housenumber_count': basias_geocoded_housenumber_count,
+        'basias_geocoded_street_count': basias_geocoded_street_count,
+        'basias_geocoded_municipality_count': basias_geocoded_municipality_count,
+        'basias_extracted_parcelles_count': basias_extracted_parcelles_count,
+        'basias_initial_precision': basias_initial_precision,
+        'basias_final_precision': basias_final_precision,
         'basol_count': basol_count,
-        'basol_parcelle_count': 100,
-        'basol_housenumber_count': 100,
-        'basol_street_count': 100,
-        'basol_municipality_count': 100,
-        'basol_geocoded_housenumber_count': 100,
-        'basol_geocoded_street_count': 100,
-        'basol_geocoded_locality_count': 100,
-        'basol_geocoded_municipality_count': 100,
-        'basol_initial_precision': 100,
-        'basol_precision_after_parcelle': 100,
-        'basol_precision_after_geocodage': 100,
-        'sis_count': sis_count,
-        'basias_count': basias_count
+        'basol_housenumber_count': basol_housenumber_count,
+        'basol_street_count': basol_street_count,
+        'basol_municipality_count': basol_municipality_count,
+        'basol_geocoded_housenumber_count': basol_geocoded_housenumber_count,
+        'basol_geocoded_street_count': basol_geocoded_street_count,
+        'basol_geocoded_municipality_count': basol_geocoded_municipality_count,
+        'basol_extracted_parcelles_count': basol_extracted_parcelles_count,
+        'basol_initial_precision': basol_initial_precision,
+        'basol_final_precision': basol_final_precision,
+        'sis_count': sis_count
     }
 
     dir_path = os.path.dirname(os.path.realpath(__file__))

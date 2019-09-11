@@ -171,6 +171,38 @@
     </td>
     <!-- BASIAS -->
     <td>
+      <table>
+        <tr>
+          <th>Précision</th>
+          <th>Nombre</th>
+          <th>Pourcentage</th>
+        </tr>
+        <tr>
+          <td>Parcelle</td>
+          <td>{{ basias_parcel_count }}</td>
+          <td>{{ "%.1f %%" % ((basias_parcel_count / basias_count) * 100) }}</td>
+        </tr>
+        <tr>
+          <td>Numéro de rue</td>
+          <td>{{ basias_housenumber_count }}</td>
+          <td>{{ "%.1f %%" % ((basias_housenumber_count / basias_count) * 100) }}</td>
+        </tr>
+        <tr>
+          <td>Rue</td>
+          <td>{{ basias_street_count }}</td>
+          <td>{{ "%.1f %%" % ((basias_street_count / basias_count) * 100) }}</td>
+        </tr>
+        <tr>
+          <td>Localité</td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>Commune</td>
+          <td>{{ basias_municipality_count }}</td>
+          <td>{{ "%.1f %%" % ((basias_municipality_count / basias_count) * 100) }}</td>
+        </tr>
+      </table>
     </td>
     <!-- BASOL -->
     <td>
@@ -182,8 +214,8 @@
         </tr>
         <tr>
           <td>Parcelle</td>
-          <td>{{ basol_parcelle_count }}</td>
-          <td>{{ "%.1f %%" % ((basol_parcelle_count / basol_count) * 100) }}</td>
+          <td></td>
+          <td></td>
         </tr>
         <tr>
           <td>Numéro de rue</td>
@@ -308,7 +340,32 @@
     </td>
     <!-- BASIAS -->
     <td>
-      TODO
+      <table>
+        <tr>
+          <th>Précision</th>
+          <th>Nombre</th>
+          <th>Pourcentage</th>
+        </tr>
+        <tr>
+          <td>Parcelle</td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>Numéro de rue</td>
+          <td>{{ basias_geocoded_housenumber_count }}</td>
+          <td>{{"%.1f %%" % ((basias_geocoded_housenumber_count / basias_count) * 100)}}</td>
+        </tr>
+        <tr>
+          <td>Rue</td>
+          <td>{{ basias_geocoded_street_count }}</td>
+          <td>{{"%.1f %%" % ((basias_geocoded_street_count / basias_count) * 100)}}</td>
+        </tr>
+          <td>Commune</td>
+          <td>{{ basias_geocoded_municipality_count }}</td>
+          <td>{{"%.1f %%" % ((basias_geocoded_municipality_count / basias_count) * 100)}}</td>
+        </tr>
+      </table>
     </td>
     <!-- BASOL -->
     <td>
@@ -334,11 +391,6 @@
           <td>{{"%.1f %%" % ((basol_geocoded_street_count / basol_count) * 100)}}</td>
         </tr>
         <tr>
-          <td>Localité</td>
-          <td>{{ basol_geocoded_locality_count }}</td>
-          <td>{{"%.1f %%" % ((basol_geocoded_locality_count / basol_count) * 100)}}</td>
-        </tr>
-        <tr>
           <td>Commune</td>
           <td>{{ basol_geocoded_municipality_count }}</td>
           <td>{{"%.1f %%" % ((basol_geocoded_municipality_count / basol_count) * 100)}}</td>
@@ -349,23 +401,42 @@
     <td></td>
   </tr>
   <tr>
+    <td> Extraction des informations cadastrales </td>
+    <!-- SIIIC -->
+    <td>
+    </td>
+    <!-- BASIAS -->
+    <td>
+      Nombre de parcelles extraites {{ basias_extracted_parcelles_count }}
+    </td>
+    <!-- BASOL -->
+    <td>
+      Nombre de parcelles extraites {{basol_extracted_parcelles_count}}
+    </td>
+    <!-- SIS -->
+    <td>
+    </td>
+  </tr>
+  <tr>
     <td> KPI redressement des données </td>
     <!-- SIIIC -->
     <td>
       <ul>
         <li> Ile-de-France
           <p> Précision des données intiales: {{ "%.1f %%" % s3ic_initial_precision }} </p>
-          <p> Précision des données après géocodage: {{ "%.1f %%" % s3ic_precision_after_geocodage }} </p>
+          <p> Précision des données après géocodage: {{ "%.1f %%" % s3ic_final_precision }} </p>
         </li>
       </ul>
     </td>
     <!-- BASIAS -->
-    <td>TODO</td>
+    <td>
+       <p> Précision des données intiales: {{ "%.1f %%" % basias_initial_precision }} </p>
+       <p> Précision des données après géocodage et extraction des parcelles: {{ "%.1f %%" % basias_final_precision }}</p>
+    </td>
     <!-- BASOL -->
     <td>
        <p> Précision des données intiales: {{ "%.1f %%" % basol_initial_precision }} </p>
-       <p> Précision des données après prise en compte des parcelles: {{ "%.1f %%" % basol_precision_after_parcelle }} </p>
-       <p> Précision des données après géocodage: {{ "%.1f %%" % basol_precision_after_geocodage }} </p>
+       <p> Précision des données après géocodage et extraction des parcelles: {{ "%.1f %%" % basol_final_precision }}</p>
     </td>
     <!-- SIS -->
     <td>  </td>
