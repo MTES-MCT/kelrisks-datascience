@@ -86,7 +86,6 @@ target/
 .ipynb_checkpoints
 
 # pyenv
-.pyenv
 .python-version
 
 # celery beat schedule file
@@ -119,6 +118,3 @@ venv.bak/
 
 # divers
 install.sh
-
-# reports output
-code/dags/qualite.md

@@ -47,29 +47,29 @@
       <table>
         <tr>
           <td>Toute la France</td>
-          <td>74558</td>
+          <td>{{ s3ic_count }}</td>
         </tr>
         <tr>
           <td>Ile-de-France</td>
-          <td>26286</td>
+          <td>{{ s3ic_idf_count }}</td>
         </tr>
         <tr>
           <td>France (hors IDF)</td>
-          <td>48274</td>
+          <td>{{ s3ic_france_count }}</td>
         </tr>
       </table>
     </td>
     <!-- BASIAS -->
     <td>
-      286090
+      {{ basias_count }}
     </td>
     <!-- BASOL -->
     <td>
-      6995
+      {{ basol_count }}
     </td>
     <!-- SIS -->
     <td>
-      656
+      {{ sis_count }}
     </td>
   </tr>
   <tr>
@@ -108,8 +108,8 @@
           </tr>
           <tr>
             <td>Parcelle</td>
-            <td>13254</td>
-            <td>50.4 %</td>
+            <td>{{ s3ic_idf_precision_parcel_count }}</td>
+            <td>{{ "%.1f %%" % ((s3ic_idf_precision_parcel_count / s3ic_idf_count) * 100) }}</td>
           </tr>
           <tr>
             <td>Numéro de rue</td>
@@ -128,8 +128,8 @@
           </tr>
           <tr>
             <td>Commune</td>
-            <td> 13032 </td>
-            <td>49.6 %</td>
+            <td> {{ s3ic_idf_precision_commune_count }} </td>
+            <td>{{ "%.1f %%" % ((s3ic_idf_precision_commune_count / s3ic_idf_count) * 100)}}</td>
           </tr>
         </table>
         </li>
@@ -142,13 +142,13 @@
           </tr>
           <tr>
             <td>Parcelle</td>
-            <td>34495</td>
-            <td>71.5 %</td>
+            <td>{{ s3ic_france_parcel_count }}</td>
+            <td>{{ "%.1f %%" % ((s3ic_france_parcel_count / s3ic_france_count) * 100) }}</td>
           </tr>
           <tr>
             <td>Numéro de rue</td>
-            <td>5631</td>
-            <td>11.7 %</td>
+            <td>{{ s3ic_france_housenumber_count }}</td>
+            <td>{{ "%.1f %%" % ((s3ic_france_housenumber_count / s3ic_france_count) * 100) }}</td>
           </tr>
           <tr>
             <td>Rue</td>
@@ -162,8 +162,8 @@
           </tr>
           <tr>
             <td>Commune</td>
-            <td>8148</td>
-            <td>16.9 %</td>
+            <td>{{ s3ic_france_municipality_count }}</td>
+            <td>{{ "%.1f %%" % ((s3ic_france_municipality_count / s3ic_france_count) * 100) }}</td>
           </tr>
         </table>
         </li>
@@ -179,18 +179,18 @@
         </tr>
         <tr>
           <td>Parcelle</td>
-          <td>192037</td>
-          <td>67.1 %</td>
+          <td>{{ basias_parcel_count }}</td>
+          <td>{{ "%.1f %%" % ((basias_parcel_count / basias_count) * 100) }}</td>
         </tr>
         <tr>
           <td>Numéro de rue</td>
-          <td>22373</td>
-          <td>7.8 %</td>
+          <td>{{ basias_housenumber_count }}</td>
+          <td>{{ "%.1f %%" % ((basias_housenumber_count / basias_count) * 100) }}</td>
         </tr>
         <tr>
           <td>Rue</td>
-          <td>0</td>
-          <td>0.0 %</td>
+          <td>{{ basias_street_count }}</td>
+          <td>{{ "%.1f %%" % ((basias_street_count / basias_count) * 100) }}</td>
         </tr>
         <tr>
           <td>Localité</td>
@@ -199,8 +199,8 @@
         </tr>
         <tr>
           <td>Commune</td>
-          <td>71680</td>
-          <td>25.1 %</td>
+          <td>{{ basias_municipality_count }}</td>
+          <td>{{ "%.1f %%" % ((basias_municipality_count / basias_count) * 100) }}</td>
         </tr>
       </table>
     </td>
@@ -219,13 +219,13 @@
         </tr>
         <tr>
           <td>Numéro de rue</td>
-          <td>2491</td>
-          <td>35.6 %</td>
+          <td>{{ basol_housenumber_count }}</td>
+          <td>{{"%.1f %%" % ((basol_housenumber_count / basol_count) * 100)}}</td>
         </tr>
         <tr>
           <td>Rue</td>
-          <td>993</td>
-          <td>14.2 %</td>
+          <td>{{ basol_street_count }}</td>
+          <td>{{"%.1f %%" % ((basol_street_count / basol_count) * 100)}}</td>
         </tr>
         <tr>
           <td>Localité</td>
@@ -234,8 +234,8 @@
         </tr>
         <tr>
           <td>Commune</td>
-          <td>3511</td>
-          <td>50.2 %</td>
+          <td>{{ basol_municipality_count }}</td>
+          <td>{{"%.1f %%" % ((basol_municipality_count / basol_count) * 100)}}</td>
         </tr>
       </table>
     </td>
@@ -249,7 +249,7 @@
         </tr>
         <tr>
           <td>Parcelle</td>
-          <td>656</td>
+          <td>{{sis_count}}</td>
           <td>100%</td>
         </tr>
         <tr>
@@ -294,17 +294,17 @@
             </tr>
             <tr>
               <td>Numéro de rue</td>
-              <td>12672</td>
-              <td>48.2 %</td>
+              <td>{{ s3ic_geocoded_idf_housenumber_count }}</td>
+              <td>{{"%.1f %%" % ((s3ic_geocoded_idf_housenumber_count / s3ic_idf_count) * 100)}}</td>
             </tr>
             <tr>
               <td>Rue</td>
-              <td>3537</td>
-              <td>13.5 %</td>
+              <td>{{ s3ic_geocoded_idf_street_count }}</td>
+              <td>{{"%.1f %%" % ((s3ic_geocoded_idf_street_count / s3ic_idf_count) * 100)}}</td>
             </tr>
               <td>Commune</td>
-              <td>10077</td>
-              <td>38.3 %</td>
+              <td>{{ s3ic_geocoded_idf_municipality_count }}</td>
+              <td>{{"%.1f %%" % ((s3ic_geocoded_idf_municipality_count / s3ic_idf_count) * 100)}}</td>
             </tr>
           </table>
         </li>
@@ -322,17 +322,17 @@
             </tr>
             <tr>
               <td>Numéro de rue</td>
-              <td>1050</td>
-              <td>2.2 %</td>
+              <td>{{ s3ic_geocoded_hors_idf_housenumber_count }}</td>
+              <td>{{"%.1f %%" % ((s3ic_geocoded_hors_idf_housenumber_count / s3ic_france_count) * 100)}}</td>
             </tr>
             <tr>
               <td>Rue</td>
-              <td>1663</td>
-              <td>3.4 %</td>
+              <td>{{ s3ic_geocoded_hors_idf_street_count }}</td>
+              <td>{{"%.1f %%" % ((s3ic_geocoded_hors_idf_street_count / s3ic_france_count) * 100)}}</td>
             </tr>
               <td>Commune</td>
-              <td>45561</td>
-              <td>94.4 %</td>
+              <td>{{ s3ic_geocoded_hors_idf_municipality_count }}</td>
+              <td>{{"%.1f %%" % ((s3ic_geocoded_hors_idf_municipality_count / s3ic_france_count) * 100)}}</td>
             </tr>
           </table>
         </li>
@@ -353,17 +353,17 @@
         </tr>
         <tr>
           <td>Numéro de rue</td>
-          <td>82756</td>
-          <td>28.9 %</td>
+          <td>{{ basias_geocoded_housenumber_count }}</td>
+          <td>{{"%.1f %%" % ((basias_geocoded_housenumber_count / basias_count) * 100)}}</td>
         </tr>
         <tr>
           <td>Rue</td>
-          <td>57451</td>
-          <td>20.1 %</td>
+          <td>{{ basias_geocoded_street_count }}</td>
+          <td>{{"%.1f %%" % ((basias_geocoded_street_count / basias_count) * 100)}}</td>
         </tr>
           <td>Commune</td>
-          <td>145883</td>
-          <td>51.0 %</td>
+          <td>{{ basias_geocoded_municipality_count }}</td>
+          <td>{{"%.1f %%" % ((basias_geocoded_municipality_count / basias_count) * 100)}}</td>
         </tr>
       </table>
     </td>
@@ -382,18 +382,18 @@
         </tr>
         <tr>
           <td>Numéro de rue</td>
-          <td>2542</td>
-          <td>36.3 %</td>
+          <td>{{ basol_geocoded_housenumber_count }}</td>
+          <td>{{"%.1f %%" % ((basol_geocoded_housenumber_count / basol_count) * 100)}}</td>
         </tr>
         <tr>
           <td>Rue</td>
-          <td>1682</td>
-          <td>24.0 %</td>
+          <td>{{ basol_geocoded_street_count }}</td>
+          <td>{{"%.1f %%" % ((basol_geocoded_street_count / basol_count) * 100)}}</td>
         </tr>
         <tr>
           <td>Commune</td>
-          <td>2771</td>
-          <td>39.6 %</td>
+          <td>{{ basol_geocoded_municipality_count }}</td>
+          <td>{{"%.1f %%" % ((basol_geocoded_municipality_count / basol_count) * 100)}}</td>
         </tr>
       </table>
     </td>
@@ -407,11 +407,11 @@
     </td>
     <!-- BASIAS -->
     <td>
-      Nombre de parcelles extraites 34637
+      Nombre de parcelles extraites {{ basias_extracted_parcelles_count }}
     </td>
     <!-- BASOL -->
     <td>
-      Nombre de parcelles extraites 3747
+      Nombre de parcelles extraites {{basol_extracted_parcelles_count}}
     </td>
     <!-- SIS -->
     <td>
@@ -421,18 +421,18 @@
     <td> KPI redressement des données </td>
     <!-- SIIIC -->
     <td>
-      <p> Précision des données intiales: 71.6 % </p>
-      <p> Précision des données après géocodage: 82.6 % </p>
+      <p> Précision des données intiales: {{ "%.1f %%" % s3ic_initial_precision }} </p>
+      <p> Précision des données après géocodage: {{ "%.1f %%" % s3ic_final_precision }} </p>
     </td>
     <!-- BASIAS -->
     <td>
-       <p> Précision des données intiales: 74.9 % </p>
-       <p> Précision des données après géocodage et extraction des parcelles: 77.8 %</p>
+       <p> Précision des données intiales: {{ "%.1f %%" % basias_initial_precision }} </p>
+       <p> Précision des données après géocodage et extraction des parcelles: {{ "%.1f %%" % basias_final_precision }}</p>
     </td>
     <!-- BASOL -->
     <td>
-       <p> Précision des données intiales: 35.6 % </p>
-       <p> Précision des données après géocodage et extraction des parcelles: 75.6 %</p>
+       <p> Précision des données intiales: {{ "%.1f %%" % basol_initial_precision }} </p>
+       <p> Précision des données après géocodage et extraction des parcelles: {{ "%.1f %%" % basol_final_precision }}</p>
     </td>
     <!-- SIS -->
     <td>  </td>

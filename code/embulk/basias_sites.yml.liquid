@@ -1,0 +1,72 @@
+in:
+  type: file
+  path_prefix: {{ env.DATA_DIR }}/basias/sites.csv
+  parser:
+    charset: UTF-8
+    newline: LF
+    type: csv
+    delimiter: ;
+    quote: '"'
+    escape: '"'
+    trim_if_not_quoted: false
+    skip_header_lines: 1
+    allow_extra_columns: false
+    allow_optional_columns: false
+    columns:
+    - {name: indice_departemental, type: string}
+    - {name: unite_responsable, type: string}
+    - {name: nom_usuel, type: string}
+    - {name: date_creation, type: timestamp, format: '%Y-%m-%d'}
+    - {name: createur, type: string}
+    - {name: etat_de_connaissance, type: string}
+    - {name: raison_sociale, type: string}
+    - {name: siege_social, type: string}
+    - {name: sous_surveillance, type: string}
+    - {name: visite, type: string}
+    - {name: date_visite, type: timestamp, format: '%Y-%m-%d'}
+    - {name: consultation_etat, type: string}
+    - {name: date_consultation_etat, type: string}
+    - {name: consultation_mairie, type: string}
+    - {name: date_consultation_mairie, type: timestamp, format: '%Y-%m-%d'}
+    - {name: reponse_mairie, type: string}
+    - {name: date_reponse_mairie, type: timestamp, format: '%Y-%m-%d'}
+    - {name: commentaire, type: string}
+    - {name: visite_virtuelle, type: string}
+    - {name: date_visite_virtuelle, type: string}
+    - {name: statut_validation, type: long}
+    - {name: commentaire_validation, type: string}
+out:
+  type: postgresql
+  host: {{ env.KELRISKS_POSTGRES_HOST }}
+  user: {{ env.KELRISKS_POSTGRES_USER }}
+  password: {{ env.KELRISKS_POSTGRES_PASSWORD }}
+  port: {{ env.KELRISKS_POSTGRES_PORT }}
+  ssl: {{ env.KELRISKS_POSTGRES_SSL_ON }}
+  database: {{ env.KELRISKS_POSTGRES_DB }}
+  table: basias_sites_source
+  schema: etl
+  options: {loglevel: 2}
+  mode: replace
+  column_options:
+    indice_departemental: {type: VARCHAR(255)}
+    unite_responsable: {type: VARCHAR(255)}
+    nom_usuel: {type: VARCHAR(255)}
+    date_creation: {type: DATE}
+    createur: {type: VARCHAR(255)}
+    etat_de_connaissance: {type: VARCHAR(255)}
+    raison_sociale: {type: VARCHAR(255)}
+    siege_social: {type: VARCHAR(255)}
+    sous_surveillance: {type: VARCHAR(255)}
+    visite: {type: VARCHAR(255)}
+    date_visite: {type: DATE}
+    consultation_etat: {type: VARCHAR(255)}
+    date_consultation_etat: {type: DATE}
+    consultation_mairie: {type: VARCHAR(255)}
+    date_consultation_mairie: {type: DATE}
+    reponse_mairie: {type: VARCHAR(255)}
+    date_reponse_mairie: {type: DATE}
+    commentaire: {type: TEXT}
+    visite_virtuelle: {type: VARCHAR(255)}
+    date_visite_virtuelle: {type: DATE}
+    statut_validation:  {type: INT2}
+    commentaire_validation: {type: TEXT}

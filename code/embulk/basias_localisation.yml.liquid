@@ -1,0 +1,76 @@
+in:
+  type: file
+  path_prefix: {{ env.DATA_DIR }}/basias/localisation.csv
+  parser:
+    charset: UTF-8
+    newline: LF
+    type: csv
+    delimiter: ;
+    quote: '"'
+    escape: '"'
+    trim_if_not_quoted: false
+    skip_header_lines: 1
+    allow_extra_columns: false
+    allow_optional_columns: false
+    columns:
+    - {name: indice_departemental, type: string}
+    - {name: adresse, type: string}
+    - {name: localisation, type: string}
+    - {name: zone_lambert, type: string}
+    - {name: x, type: string}
+    - {name: y, type: string}
+    - {name: altitude, type: string}
+    - {name: precision_altitude, type: string}
+    - {name: x_lambert2_etendue, type: string}
+    - {name: y_lambert2_etendue, type: string}
+    - {name: numero_carte, type: string}
+    - {name: huitieme, type: string}
+    - {name: numero_insee, type: string}
+    - {name: arrondissement, type: string}
+    - {name: numero, type: long}
+    - {name: bister, type: string}
+    - {name: type_voie, type: string}
+    - {name: nom_voie, type: string}
+    - {name: precision, type: string}
+    - {name: xl2_adresse, type: string}
+    - {name: yl2_adresse, type: string}
+    - {name: precision_adresse, type: string}
+    - {name: referentiel_adresse, type: string}
+    - {name: commentaire, type: string}
+out:
+  type: postgresql
+  host: {{ env.KELRISKS_POSTGRES_HOST }}
+  user: {{ env.KELRISKS_POSTGRES_USER }}
+  password: {{ env.KELRISKS_POSTGRES_PASSWORD }}
+  port: {{ env.KELRISKS_POSTGRES_PORT }}
+  ssl: {{ env.KELRISKS_POSTGRES_SSL_ON }}
+  database: {{ env.KELRISKS_POSTGRES_DB }}
+  table: basias_localisation_source
+  schema: etl
+  options: {loglevel: 2}
+  mode: replace
+  column_options:
+    indice_departemental: {type: VARCHAR(255)}
+    adresse: {type: VARCHAR(255)}
+    localisation: {type: VARCHAR(255)}
+    zone_lambert: {type: VARCHAR(255)}
+    x: {type: FLOAT8}
+    y: {type: FLOAT8}
+    altitude: {type: FLOAT8}
+    precision_altitude: {type: VARCHAR(255)}
+    x_lambert2_etendue: {type: FLOAT8}
+    y_lambert2_etendue: {type: FLOAT8}
+    numero_carte: {type: VARCHAR(255)}
+    huitieme: {type: VARCHAR(255)}
+    numero_insee: {type: VARCHAR(255)}
+    arrondissement: {type: VARCHAR(255)}
+    numero: {type: INT4}
+    bister: {type: VARCHAR(255)}
+    type_voie: {type: VARCHAR(255)}
+    nom_voie: {type: VARCHAR(255)}
+    precision: {type: VARCHAR(255)}
+    xl2_adresse: {type: FLOAT8}
+    yl2_adresse: {type: FLOAT8}
+    precision_adresse: {type: VARCHAR(255)}
+    referentiel_adresse: {type: VARCHAR(255)}
+    commentaire: {type: TEXT}
