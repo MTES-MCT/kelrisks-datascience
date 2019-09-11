@@ -444,7 +444,8 @@ def add_communes():
 
     q = session.query(S3icIntersected, Commune.geog) \
                .join(Commune,
-                     S3icIntersected.code_insee == Commune.insee) \
+                     S3icIntersected.code_insee == Commune.insee,
+                     isouter=True) \
                .all()
 
     with s3ic_with_commune.get_writer() as writer:
