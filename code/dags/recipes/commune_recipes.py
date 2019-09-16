@@ -3,7 +3,7 @@
 import geojson
 from shapely.geometry import shape
 from shapely import wkb
-from sqlalchemy import Column, BigInteger, String
+from sqlalchemy import Column, BigInteger, String, Integer
 from geoalchemy2 import Geometry
 
 from config import DATA_DIR
@@ -47,3 +47,31 @@ def load_communes():
                 }
 
                 writer.write_row_dict(row)
+
+
+def prepare_code_postal():
+
+    code_postal_source = Dataset("etl", "code_postal_source")
+    code_postal = Dataset("etl", "code_postal")
+
+    dtype = [
+        Column("id", BigInteger(), primary_key=True, autoincrement=True),
+        Column("code_insee", String),
+        Column("code_postal", String),
+        Column("nom_commune", String),
+        Column("version", Integer)]
+
+    code_postal.write_dtype(dtype)
+
+    with code_postal.get_writer() as writer:
+
+        for row in code_postal_source.iter_rows(
+                primary_key="Code_commune_INSEE"):
+
+            output_row = {
+                "code_insee": row["Code_commune_INSEE"],
+                "code_postal": row["Code_postal"],
+                "nom_commune": row["Nom_commune"]
+            }
+
+            writer.write_row_dict(output_row)

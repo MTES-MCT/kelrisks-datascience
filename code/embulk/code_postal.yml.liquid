@@ -1,0 +1,33 @@
+in:
+  type: file
+  path_prefix: {{ env.DATA_DIR }}/communes/code_postal.csv
+  parser:
+    charset: UTF-8
+    newline: CRLF
+    type: csv
+    delimiter: ;
+    quote: '"'
+    escape: '"'
+    trim_if_not_quoted: false
+    skip_header_lines: 1
+    allow_extra_columns: false
+    allow_optional_columns: false
+    columns:
+    - {name: Code_commune_INSEE, type: string}
+    - {name: Nom_commune, type: string}
+    - {name: Code_postal, type: string}
+    - {name: Libelle_acheminement, type: string}
+    - {name: Ligne_5, type: string}
+    - {name: coordonnees_gps, type: string}
+out:
+  type: postgresql
+  host: {{ env.KELRISKS_POSTGRES_HOST }}
+  user: {{ env.KELRISKS_POSTGRES_USER }}
+  password: {{ env.KELRISKS_POSTGRES_PASSWORD }}
+  port: {{ env.KELRISKS_POSTGRES_PORT }}
+  ssl: {{ env.KELRISKS_POSTGRES_SSL_ON }}
+  database: {{ env.KELRISKS_POSTGRES_DB }}
+  table: code_postal_source
+  schema: etl
+  options: {loglevel: 2}
+  mode: replace

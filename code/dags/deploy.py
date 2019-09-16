@@ -54,6 +54,12 @@ with DAG("deploy",
         source="etl.s3ic",
         destination="kelrisks.s3ic")
 
+    deploy_code_postal = CopyTableOperator(
+        task_id="deploy_code_postal",
+        postgres_conn_id=CONN_ID,
+        source="etl.code_postal",
+        destination="kelrisks.adresse_commune")
+
     start >> [
         deploy_cadastre,
         deploy_sis,
