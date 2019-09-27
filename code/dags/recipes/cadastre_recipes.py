@@ -5,69 +5,67 @@ from urllib.request import urlretrieve
 import gzip
 import geojson
 
-from sqlalchemy import Column, BigInteger, String, Integer
-from geoalchemy2 import Geometry
 from shapely.geometry import shape
 from shapely import wkb
+import requests
+from airflow.hooks.data_preparation import PostgresDataset
 
-from datasets import Dataset
 from constants import WGS84
+from scrapers import CadastreCommuneScraper
+from config import CONN_ID
 
 
 def load_cadastre_for_department(department):
 
-    cadastre = Dataset("etl", "cadastre")
+    cadastre_temp = PostgresDataset(
+        name="cadastre_{}_temp".format(department),
+        schema="etl",
+        postgres_conn_id=CONN_ID)
 
-    with cadastre.get_writer() as writer:
+    dep_url = "https://cadastre.data.gouv.fr/data/etalab-cadastre" + \
+        "/latest/geojson/communes/{dep}/".format(dep=department)
 
-        with tempfile.NamedTemporaryFile() as temp:
+    # Recherche la liste des communes dans la page web
+    scraper = CadastreCommuneScraper(dep_url)
+    with requests.Session() as session:
+        scraper.fetch_url(session)
+    scraper.parse()
+    scraper.find_communes()
+    communes = scraper.communes
 
-            url = "https://cadastre.data.gouv.fr" + \
-                "/data/etalab-cadastre/latest/geojson/departements" + \
-                "/{dep}/cadastre-{dep}-parcelles.json.gz" \
-                .format(dep=department)
+    # Iterate over each commune and load data into temporary table
+    with cadastre_temp.get_writer() as writer:
 
-            urlretrieve(url, temp.name)
+        for commune in communes:
 
-            with gzip.open(temp.name) as f:
+            with tempfile.NamedTemporaryFile() as temp:
 
-                data = geojson.loads(f.read())
+                commune_url = "https://cadastre.data.gouv.fr/" + \
+                    "data/etalab-cadastre/latest/geojson/communes/" + \
+                    "{dep}/{commune}/cadastre-{commune}-parcelles.json.gz" \
+                    .format(dep=department, commune=commune)
 
-                features = data["features"]
+                urlretrieve(commune_url, temp.name)
 
-                for feature in features:
+                with gzip.open(temp.name) as f:
 
-                    s = shape(feature["geometry"])
+                    data = geojson.loads(f.read())
 
-                    row = {
-                        "code": feature["id"],
-                        "commune": feature["properties"]["commune"],
-                        "prefixe": feature["properties"]["prefixe"],
-                        "section": feature["properties"]["section"],
-                        "numero": feature["properties"]["numero"],
-                        "type": feature["type"],
-                        "type_geom": feature["geometry"]["type"],
-                        "geog": wkb.dumps(s, hex=True, srid=WGS84)
-                    }
+                    features = data["features"]
 
-                    writer.write_row_dict(row)
+                    for feature in features:
 
+                        s = shape(feature["geometry"])
 
-def create_cadastre_table():
+                        row = {
+                            "code": feature["id"],
+                            "commune": feature["properties"]["commune"],
+                            "prefixe": feature["properties"]["prefixe"],
+                            "section": feature["properties"]["section"],
+                            "numero": feature["properties"]["numero"],
+                            "type": feature["type"],
+                            "type_geom": feature["geometry"]["type"],
+                            "geog": wkb.dumps(s, hex=True, srid=WGS84)
+                        }
 
-    cadastre = Dataset("etl", "cadastre")
-
-    dtype = [
-        Column("id", BigInteger(), primary_key=True, autoincrement=True),
-        Column("version", Integer),
-        Column("code", String),
-        Column("commune", String),
-        Column("prefixe", String),
-        Column("section", String),
-        Column("numero", String),
-        Column("type", String),
-        Column("type_geom", String),
-        Column("geog", Geometry(srid=4326))
-    ]
-
-    cadastre.write_dtype(dtype)
+                        writer.write_row_dict(row)

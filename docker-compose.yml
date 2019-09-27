@@ -25,6 +25,7 @@ services:
       - ./code/dags:$AIRFLOW_HOME/dags
       - ./code/embulk:$AIRFLOW_HOME/embulk
       - ./code/templates:$AIRFLOW_HOME/templates
+      - ./code/sql:$AIRFLOW_HOME/sql
     environment:
       AIRFLOW__CORE__FERNET_KEY: $AIRFLOW__CORE__FERNET_KEY
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
@@ -41,6 +42,7 @@ services:
       CADASTRE_CONCURRENCY: $CADASTRE_CONCURRENCY
       DEPARTEMENTS: $DEPARTEMENTS
       DATA_DIR: $AIRFLOW_HOME/data
+      SQL_DIR: $AIRFLOW_HOME/sql
 
 volumes:
   pg_data:

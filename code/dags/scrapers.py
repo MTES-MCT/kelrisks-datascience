@@ -47,13 +47,7 @@ class SoupNotSetException(Exception):
         super().__init__(msg)
 
 
-class IcpeScraper():
-    """
-    Scraper used to retrieve the rubriques from an icpe
-    detail page like this one
-    http://www.installationsclassees.developpement-durable.gouv.fr/
-    ficheEtablissement.php?champEtablBase=30&champEtablNumero=12015
-    """
+class Scraper():
 
     def __init__(self, url):
         self.url = url
@@ -75,6 +69,19 @@ class IcpeScraper():
             raise HtmlNotSetException()
         self.soup = BeautifulSoup(self.html, 'lxml')
 
+
+class IcpeScraper(Scraper):
+    """
+    Scraper used to retrieve the rubriques from an icpe
+    detail page like this one
+    http://www.installationsclassees.developpement-durable.gouv.fr/
+    ficheEtablissement.php?champEtablBase=30&champEtablNumero=12015
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.adresse = []
+
     def find_adresse(self):
         """ find adresse in the html tree """
         if not self.soup:
@@ -87,3 +94,23 @@ class IcpeScraper():
             groups = m.groups()
             if groups and len(groups) > 0:
                 self.adresse = groups[0]
+
+
+class CadastreCommuneScraper(Scraper):
+    """
+    Scraper utilisé pour lister l'ensemble des codes commnunes
+    présents sur une page du cadastre Etalab
+    Ex: https://cadastre.data.gouv.fr/data/etalab-cadastre/2019-07-01/geojson/communes/01/
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.communes = []
+
+    def find_communes(self):
+        if not self.soup:
+            raise SoupNotSetException()
+        links = self.soup.find_all("a")
+        hrefs = [link["href"].strip("/") for link in links]
+        communes = [href for href in hrefs if len(href) == 5]
+        self.communes = communes
