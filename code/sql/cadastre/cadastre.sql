@@ -1,5 +1,5 @@
--- Permet de créer la table cadastre principale
--- et les différentes tables temporaires
+-- Schéma de la table cadastre principale
+-- et des différentes tables temporaires
 
 DROP TABLE IF EXISTS {{ params.table_name }};
 
@@ -13,5 +13,5 @@ CREATE TABLE {{ params.table_name }} (
   numero VARCHAR(255),
   type VARCHAR(255),
   type_geom VARCHAR(255),
-  geog GEOMETRY(POLYGON, 4326)
+  geog GEOMETRY(GEOMETRY, 4326)
 );

@@ -8,19 +8,16 @@ import geojson
 from shapely.geometry import shape
 from shapely import wkb
 import requests
-from airflow.hooks.data_preparation import PostgresDataset
 
 from constants import WGS84
 from scrapers import CadastreCommuneScraper
-from config import CONN_ID
+from datasets import Dataset
 
 
 def load_cadastre_for_department(department):
 
-    cadastre_temp = PostgresDataset(
-        name="cadastre_{}_temp".format(department),
-        schema="etl",
-        postgres_conn_id=CONN_ID)
+    cadastre_temp = Dataset(
+        "etl", "cadastre_{dep}_temp".format(dep=department))
 
     dep_url = "https://cadastre.data.gouv.fr/data/etalab-cadastre" + \
         "/latest/geojson/communes/{dep}/".format(dep=department)
@@ -65,7 +62,8 @@ def load_cadastre_for_department(department):
                             "numero": feature["properties"]["numero"],
                             "type": feature["type"],
                             "type_geom": feature["geometry"]["type"],
-                            "geog": wkb.dumps(s, hex=True, srid=WGS84)
+                            "geog": wkb.dumps(s, hex=True, srid=WGS84),
+                            "version": 1
                         }
 
                         writer.write_row_dict(row)

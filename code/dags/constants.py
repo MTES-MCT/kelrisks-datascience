@@ -109,3 +109,5 @@ DEPARTEMENTS = {
     '974': 'La Réunion',
     '976': 'Mayotte',
 }
+
+DOM_TOM = ["971", "972", "973", "974", "976"]

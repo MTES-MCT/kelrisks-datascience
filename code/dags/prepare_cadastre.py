@@ -7,13 +7,13 @@ Le dernier millésime du cadastre Etalab est utilisé ce qui
 permet de faire des mises à jour. Voir
 https://cadastre.data.gouv.fr/
 
-Il est également possible de charger les données pour les données
-pour quelques départements seulement en utilisant la variable
+Il est également possible de charger les données
+pour certains départements uniquement en utilisant la variable
 d'environnement DEPARTEMENTS
 
 Ex:
-DEPARTEMENTS=07,26,13
-DEPARTEMENTS=all
+DEPARTEMENTS=07,26,13 => Charge les parcelles de l'Ardèche et de la Drôme
+DEPARTEMENTS=all => Charges les parcelles France entière
 
 On utilise les données au format geojson par commune plutôt
 que par département pour éviter de consommer trop de mémoire
@@ -31,6 +31,7 @@ des doublons.
 """
 
 from datetime import datetime
+import os
 
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
@@ -47,14 +48,14 @@ default_args = helpers.default_args({"start_date": datetime(2019, 6, 11, 5)})
 with DAG("prepare_cadastre",
          default_args=default_args,
          schedule_interval=None,
-         template_searchpath=SQL_DIR,
+         template_searchpath=os.path.join(SQL_DIR, "cadastre"),
          concurrency=CADASTRE_CONCURRENCY) as dag:
 
     start = DummyOperator(task_id="start")
 
     create_cadastre_table = PostgresOperator(
         task_id="create_cadastre_table",
-        sql="create_cadastre.sql",
+        sql="cadastre.sql",
         postgres_conn_id=CONN_ID,
         params={"table_name": "etl.cadastre"})
 
@@ -62,7 +63,7 @@ with DAG("prepare_cadastre",
 
     for departement in DEPARTEMENTS:
 
-        temp_table = "etl.cadastre_{dep}_temp".format(
+        temp_table = "\"etl\".\"cadastre_{dep}_temp\"".format(
             dep=departement)
 
         start_dep = DummyOperator(
@@ -72,7 +73,7 @@ with DAG("prepare_cadastre",
 
         create_temp = PostgresOperator(
             task_id="create_temp_{dep}".format(dep=departement),
-            sql="create_cadastre.sql",
+            sql="cadastre.sql",
             postgres_conn_id=CONN_ID,
             params={"table_name": temp_table})
 
@@ -83,7 +84,7 @@ with DAG("prepare_cadastre",
 
         copy = PostgresOperator(
             task_id="copy_{dep}".format(dep=departement),
-            sql="copy_cadastre.sql",
+            sql="copy_temp.sql",
             postgres_conn_id=CONN_ID,
             params={
                 "source": temp_table,

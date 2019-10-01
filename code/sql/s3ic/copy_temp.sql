@@ -1,0 +1,51 @@
+-- Permet de copier les données des tables
+-- temporaires de départements vers la table
+-- s3ic source
+
+INSERT INTO etl.s3ic_source (
+  code_s3ic,
+  x,
+  y,
+  nom_ets,
+  num_dep,
+  cd_insee,
+  cd_postal,
+  nomcommune,
+  code_naf,
+  lib_naf,
+  num_siret,
+  regime,
+  lib_regime,
+  ippc,
+  seveso,
+  lib_seveso,
+  famille_ic,
+  url_fiche,
+  rayon,
+  precis_loc,
+  lib_precis,
+  geom)
+SELECT
+  code_s3ic,
+  x,
+  y,
+  nom_ets,
+  num_dep,
+  cd_insee,
+  cd_postal,
+  nomcommune,
+  code_naf,
+  lib_naf,
+  num_siret,
+  regime,
+  lib_regime,
+  ippc,
+  seveso,
+  lib_seveso,
+  famille_ic,
+  url_fiche,
+  rayon,
+  precis_loc,
+  lib_precis,
+  ST_SETSRID(geom, 4326)
+FROM {{ params.source }}

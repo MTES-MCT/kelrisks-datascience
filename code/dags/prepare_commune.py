@@ -7,6 +7,7 @@ from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.data_preparation import DownloadUnzipOperator
+from airflow.operators.dummy_operator import DummyOperator
 
 import helpers
 import recipes.commune_recipes as recipes
@@ -20,14 +21,20 @@ with DAG("prepare_commune",
          default_args=default_args,
          schedule_interval=None) as dag:
 
+    start = DummyOperator(task_id="start")
+
     download = DownloadUnzipOperator(
         task_id="download",
         url="https://www.data.gouv.fr/fr/datasets/r/07b7c9a2-d1e2-4da6-9f20-01a7b72d4b12",
         dir_path="{data_dir}/communes".format(data_dir=DATA_DIR))
 
+    start >> download
+
     load = PythonOperator(
         task_id="load",
         python_callable=recipes.load_communes)
+
+    download >> load
 
     create_index = PostgresOperator(
         task_id="create_index",
@@ -36,4 +43,4 @@ with DAG("prepare_commune",
             ON etl.commune (insee)"""),
         postgres_conn_id=CONN_ID)
 
-    download >> load >> create_index
+    load >> create_index
