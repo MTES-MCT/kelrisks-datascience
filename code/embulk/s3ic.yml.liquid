@@ -1,6 +1,6 @@
 in:
   type: file
-  path_prefix: {{ env.DATA_DIR }}/s3ic/IDF
+  path_prefix: {{ env.DATA_DIR }}/s3ic/IDF/{{ env.DEPARTEMENT}}.csv
   parser:
     charset: UTF-8
     newline: CRLF
@@ -38,7 +38,7 @@ out:
   table: s3ic_idf_source
   schema: etl
   options: {loglevel: 2}
-  mode: replace
+  mode: insert
   column_options:
     code: {type: VARCHAR(255)}
     nom: {type: VARCHAR(255)}

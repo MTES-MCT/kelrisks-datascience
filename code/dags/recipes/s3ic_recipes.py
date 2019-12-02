@@ -5,14 +5,89 @@ Regroupe les recettes Python utilisées pour la préparation
 des données s3ic
 """
 
-from sqlalchemy import Column, String, func
+from sqlalchemy import Column, String, BigInteger, func, exc
 from geoalchemy2 import Geometry
+from geoalchemy2.shape import to_shape
+from shapely import wkb
 
 from datasets import Dataset
 from constants import WGS84
 from utils import row2dict
 from scrapers import IcpeScraper, fetch_parallel
 import precisions
+
+
+def merge():
+    """
+    Fusionne les données pour l'IDF et pour le reste
+    de la France en renommant des colonnes pour obtenir
+    un schéma commun
+    """
+
+    # Données hors IDF
+    s3ic_scraped = Dataset("etl", "s3ic_scraped")
+
+    # Données IDF
+    s3ic_idf_with_geom = Dataset("etl", "s3ic_idf_with_geom")
+
+    # outpt dataset
+    s3ic_merged = Dataset("etl", "s3ic_merged")
+
+    output_dtype = [
+        Column("id", BigInteger(), primary_key=True, autoincrement=True),
+        Column("code", String),
+        Column("nom", String),
+        Column("adresse", String),
+        Column("complement_adresse", String),
+        Column("code_insee", String),
+        Column("code_postal", String),
+        Column("commune", String),
+        Column("code_naf", String),
+        Column("lib_naf", String),
+        Column("num_siret", String),
+        Column("regime", String),
+        Column("lib_regime", String),
+        Column("ipcc", String),
+        Column("seveso", String),
+        Column("lib_seveso", String),
+        Column("famille_ic", String),
+        Column("url_fiche", String),
+        Column("x", BigInteger),
+        Column("y", BigInteger),
+        Column("precision", String),
+        Column("geog", Geometry(srid=WGS84))]
+
+    s3ic_merged.write_dtype(output_dtype)
+
+    try:
+        with s3ic_merged.get_writer() as writer:
+
+            for row in s3ic_scraped.iter_rows():
+                del row["id"]
+                row["code"] = row.pop("code_s3ic")
+                row["nom"] = row.pop("nom_ets")
+                row["code_insee"] = row.pop("cd_insee")
+                row["code_postal"] = row.pop("cd_postal")
+                row["commune"] = row.pop("nomcommune")
+                row["precision"] = row.pop("lib_precis")
+
+                s = to_shape(row.pop("geom"))
+                row["geog"] = wkb.dumps(s, hex=True, srid=WGS84)
+
+                writer.write_row_dict(row)
+    except exc.NoSuchTableError:
+        # si tous les départements configurés sont en IDF,
+        # cette table n'existe pas
+        pass
+
+    try:
+        with s3ic_merged.get_writer() as writer:
+            for row in s3ic_idf_with_geom.iter_rows(primary_key="code"):
+                writer.write_row_dict(row)
+    except exc.NoSuchTableError:
+        # si tous les départements configurés sont hors IDF
+        # cette table n'existe pas
+        pass
 
 
 def scrap_adresses():
@@ -103,11 +178,11 @@ def normalize_precision():
                 "Centroïde Commune": precisions.MUNICIPALITY,
                 "Inconnu": precisions.MUNICIPALITY
             }
-            precision = row.get("lib_precis")
+            precision = row.get("precision")
             if precision:
-                row["lib_precis"] = mapping.get(precision)
+                row["precision"] = mapping.get(precision)
             else:
-                row["lib_precis"] = precisions.MUNICIPALITY
+                row["precision"] = precisions.MUNICIPALITY
 
             writer.write_row_dict(row)
 
@@ -159,12 +234,12 @@ def merge_geog():
 
             output_row = {
                 **row2dict(row),
-                "geog": row.geom,
-                "geog_precision": row.lib_precis,
+                "geog": row.geog,
+                "geog_precision": row.precision,
                 "geog_source": "initial_data"
             }
 
-            c1 = row.lib_precis not in \
+            c1 = row.precision not in \
                 (precisions.HOUSENUMBER, precisions.PARCEL)
             c2 = row.geocoded_latitude and row.geocoded_longitude
             c3 = row.geocoded_result_score and row.geocoded_result_score > 0.6
@@ -276,7 +351,7 @@ def add_commune():
 
     q = session.query(S3icWithParcelle, Commune.geog) \
                .join(Commune,
-                     S3icWithParcelle.cd_insee == Commune.insee,
+                     S3icWithParcelle.code_insee == Commune.insee,
                      isouter=True) \
                .all()
 

@@ -12,7 +12,7 @@ pour certains départements uniquement en utilisant la variable
 d'environnement DEPARTEMENTS
 
 Ex:
-DEPARTEMENTS=07,26,13 => Charge les parcelles de l'Ardèche et de la Drôme
+DEPARTEMENTS=07,26 => Charge les parcelles de l'Ardèche et de la Drôme
 DEPARTEMENTS=all => Charges les parcelles France entière
 
 On utilise les données au format geojson par commune plutôt

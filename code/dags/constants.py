@@ -3,7 +3,7 @@
 # Common SRID
 WGS84 = 4326
 LAMBERT2 = 27572
-LAMBRT93 = 2154
+LAMBERT93 = 2154
 
 # Liste des départements français
 DEPARTEMENTS = {
@@ -111,3 +111,5 @@ DEPARTEMENTS = {
 }
 
 DOM_TOM = ["971", "972", "973", "974", "976"]
+
+IDF = ["75", "77", "78", "91", "92", "93", "95"]
