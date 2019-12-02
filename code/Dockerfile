@@ -2,13 +2,11 @@ FROM python:3.7-slim-stretch
 
 LABEL maintainer="benoitguigal"
 
-ARG AIRFLOW_HOME
-
 # Never prompts the user for choices on installation/configuration of packages
 ENV DEBIAN_FRONTEND noninteractive
 ENV TERM linux
 
-ENV AIRFLOW_HOME=$AIRFLOW_HOME
+ENV AIRFLOW_HOME=/usr/local/airflow
 ENV EMBULK_DIR=$AIRFLOW_HOME/embulk
 ENV DATA_DIR=$AIRFLOW_HOME/data
 ENV SQL_DIR=$AIRFLOW_HOME/sql
