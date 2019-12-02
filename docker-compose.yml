@@ -15,8 +15,6 @@ services:
     build:
       context: ./code
       dockerfile: Dockerfile
-      args:
-        AIRFLOW_HOME: $AIRFLOW_HOME
     depends_on:
       - postgres
     ports:
