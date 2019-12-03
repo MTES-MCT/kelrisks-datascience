@@ -30,9 +30,9 @@ jobs:
       - checkout
       - run:
           command: |
-              ssh ${<< parameters.user >>}@${<< parameters.host >>} "cd /srv/kelrisks-data-preparation/
-              if ${<< parameters.user >>} == "master"; then cd prod; else cd preprod; fi;
-              git pull"
+              scp docker-compose.yml ${<< parameters.user >>}@${<< parameters.host >>}:/srv/kelrisks-data-preparation/${<< parameters.branch >>}
+              ssh ${<< parameters.user >>}@${<< parameters.host >>} "cd /srv/kelrisks-data-preparation/${<< parameters.branch >>}
+              docker-compose pull"
 
 workflows:
   build-and-deploy:
