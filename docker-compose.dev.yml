@@ -1,11 +1,29 @@
 version: "3"
 
 services:
+  postgres:
+    image: postgres:9.6
+    environment:
+      - POSTGRES_USER=$POSTGRES_USER
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+      - POSTGRES_DB=$POSTGRES_DB
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
   webserver:
-    image: betagouv/kelrisks-data-preparation:$BRANCH-latest
-    network_mode: host
+    image: webserver
+    build:
+      context: ./code
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
     ports:
       - 127.0.0.1:$PORT:8080
+    volumes:
+      - ./code/dags:$AIRFLOW_HOME/dags
+      - ./code/embulk:$AIRFLOW_HOME/embulk
+      - ./code/templates:$AIRFLOW_HOME/templates
+      - ./code/sql:$AIRFLOW_HOME/sql
     environment:
       AIRFLOW__CORE__FERNET_KEY: $AIRFLOW__CORE__FERNET_KEY
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
@@ -23,3 +41,6 @@ services:
       DEPARTEMENTS: $DEPARTEMENTS
       DATA_DIR: $AIRFLOW_HOME/data
       SQL_DIR: $AIRFLOW_HOME/sql
+
+volumes:
+  pg_data:
