@@ -18,7 +18,7 @@ services:
     depends_on:
       - postgres
     ports:
-      - 127.0.0.1:$PORT
+      - 127.0.0.1:8080:$PORT
     volumes:
       - ./code/dags:/usr/local/airflow/dags
       - ./code/embulk:/usr/local/airflow/embulk
