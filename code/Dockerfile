@@ -48,9 +48,12 @@ USER airflow
 
 RUN $EMBULK_BIN gem install embulk-output-postgresql
 
-EXPOSE 8080
-
 COPY ./scripts/entrypoint.sh /entrypoint.sh
+
+COPY dags ${AIRFLOW_HOME}/dags
+COPY embulk ${EMBULK_DIR}
+COPY sql ${SQL_DIR}
+COPY templates ${AIRFLOW_HOME}/templates
 
 WORKDIR ${AIRFLOW_HOME}
 ENTRYPOINT /entrypoint.sh
