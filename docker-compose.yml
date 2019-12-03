@@ -5,7 +5,7 @@ services:
     image: betagouv/kelrisks-data-preparation:$BRANCH-latest
     network_mode: host
     ports:
-      - 127.0.0.1:$PORT:8080
+      - 127.0.0.1:$PORT
     environment:
       AIRFLOW__CORE__FERNET_KEY: $AIRFLOW__CORE__FERNET_KEY
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
