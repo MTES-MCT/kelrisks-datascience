@@ -55,6 +55,8 @@ COPY embulk ${EMBULK_DIR}
 COPY sql ${SQL_DIR}
 COPY templates ${AIRFLOW_HOME}/templates
 
+EXPOSE 8080
+
 WORKDIR ${AIRFLOW_HOME}
 ENTRYPOINT /entrypoint.sh
 

@@ -40,7 +40,7 @@ from airflow.operators.postgres_operator import PostgresOperator
 
 import helpers
 import recipes.cadastre_recipes as recipes
-from config import CONN_ID, DEPARTEMENTS, CADASTRE_CONCURRENCY, SQL_DIR
+from config import CONN_ID, DEPARTEMENTS, SQL_DIR
 
 default_args = helpers.default_args({"start_date": datetime(2019, 6, 11, 5)})
 
@@ -48,8 +48,7 @@ default_args = helpers.default_args({"start_date": datetime(2019, 6, 11, 5)})
 with DAG("prepare_cadastre",
          default_args=default_args,
          schedule_interval=None,
-         template_searchpath=os.path.join(SQL_DIR, "cadastre"),
-         concurrency=CADASTRE_CONCURRENCY) as dag:
+         template_searchpath=os.path.join(SQL_DIR, "cadastre")) as dag:
 
     start = DummyOperator(task_id="start")
 
