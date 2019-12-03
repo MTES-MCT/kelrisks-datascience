@@ -11,6 +11,7 @@ ENV EMBULK_DIR=$AIRFLOW_HOME/embulk
 ENV DATA_DIR=$AIRFLOW_HOME/data
 ENV SQL_DIR=$AIRFLOW_HOME/sql
 
+
 # https://stackoverflow.com/questions/51033689/how-to-fix-error-on-postgres-install-ubuntu
 RUN mkdir -p /usr/share/man/man1 /usr/share/man/man7
 
@@ -52,6 +53,6 @@ EXPOSE 8080
 COPY ./scripts/entrypoint.sh /entrypoint.sh
 
 WORKDIR ${AIRFLOW_HOME}
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT /entrypoint.sh
 
 
