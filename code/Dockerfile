@@ -33,7 +33,6 @@ RUN apt-get update -yqq \
 ENV EMBULK_BIN /usr/local/bin/embulk
 RUN curl -o $EMBULK_BIN -L "https://dl.embulk.org/embulk-0.9.9.jar"
 RUN chmod +x $EMBULK_BIN
-ENV EMBULK_BIN /usr/local/bin/embulk
 
 # Python dependencies
 COPY requirements.txt /tmp/requirements.txt
