@@ -16,7 +16,7 @@ wait_for_port() {
   done
 }
 
-wait_for_port "Postgres" $POSTGRES_HOST "5432"
+wait_for_port "Postgres" $AIRFLOW_POSTGRES_HOST "5432"
 
 airflow initdb
 airflow scheduler & exec airflow webserver

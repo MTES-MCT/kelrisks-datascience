@@ -8,11 +8,11 @@ jobs:
       - checkout
       - setup_remote_docker
       - run: |
-          docker build -t betagouv/kelrisks-data-preparation:$CIRCLE_SHA1 ./code
+          docker build -t betagouv/kelrisks-airflow:$CIRCLE_SHA1 ./code
           docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASSWORD
-          docker push betagouv/kelrisks-data-preparation:$CIRCLE_SHA1
-          docker tag betagouv/kelrisks-data-preparation:$CIRCLE_SHA1 betagouv/kelrisks-data-preparation:${CIRCLE_BRANCH}-latest
-          docker push betagouv/kelrisks-data-preparation:${CIRCLE_BRANCH}-latest
+          docker push betagouv/kelrisks-airflow:$CIRCLE_SHA1
+          docker tag betagouv/kelrisks-airflow:$CIRCLE_SHA1 betagouv/kelrisks-airflow:${CIRCLE_BRANCH}-latest
+          docker push betagouv/kelrisks-airflow:${CIRCLE_BRANCH}-latest
   deploy:
     machine:
       enabled: true
