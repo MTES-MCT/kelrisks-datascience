@@ -17,10 +17,10 @@ de pollution d'un terrain.
 
 On utilise les bases de données suivantes:
 
-* SIS (Les secteurs d'information des sols)
-* BASOL (Sites et sols pollués (SSP) ou potentiellement pollués appelant une action des pouvoirs publics, à titre préventif ou curatif)
-* S3IC (base des installations classées pour la protection de l'environnement)
-* BASIAS (Inventaire historique des sites industriels et activités de service)
+* **SIS** (Les secteurs d'information des sols)
+* **BASOL** (Sites et sols pollués (SSP) ou potentiellement pollués appelant une action des pouvoirs publics, à titre préventif ou curatif)
+* **S3IC** (base des installations classées pour la protection de l'environnement)
+* **BASIAS** (Inventaire historique des sites industriels et activités de service)
 
 Ces données sont disponibles en téléchargement partielle sur les sites suivants:
 * [Géorisques](https://www.georisques.gouv.fr/) (SIS, BASIAS, S3IC)
@@ -38,10 +38,6 @@ exemple ci-dessous pour chaque base
 * [Page détail Basias](http://fiches-risques.brgm.fr/georisques/basias-detaillee/IDF9100001)
 * [Page détail S3IC](http://www.installationsclassees.developpement-durable.gouv.fr/rechercheIC.php?selectRegion=&selectDept=-1&champcommune=&champNomEtabl=&champActivitePrinc=-1&selectRegEtab=-1&champListeIC=&selectPrioriteNat=-1&selectRegSeveso=-1&selectIPPC=-1#)
 
-On pourrait envisager de scraper ces pages détails pour l'ensemble
-des sites. Cela permettrait d'automatiser les mises àjour qui nécessitent actuellement des échanges
-par email avec le BRGM.
-
 ### Qualité des données
 
 La capacité de Kelrisks à délivrer son service dépend de la qualité des données.
@@ -54,18 +50,18 @@ Par ailleurs, certains enregistrement possèdent des informations de parcelles c
 
 #### Format hétérogène
 
-Le format des données entre les différentes bases est hétérogène. Par exemple les données source de SIS représentent des multi polygones, d'autres font référence à des points mais avec des srid qui peuvent être différents (Lambert93, Lambert2, WGS84, etc). Par ailleurs les informations liées de précision des données (parcelle, adresse, centroïde commune) ne sont pas les mêmes entre les bases. Il est donc nécessaire de normaliser ces concepts entre les bases.
+Le format des données entre les différentes bases est hétérogène. Par exemple les données géographiques SIS représentent des multi-polygones, d'autres font référence à des points mais avec des SRID qui peuvent être différents (Lambert93, Lambert2, WGS84, etc). Par ailleurs les concepts de précision des données (*parcelle*, *adresse*, *centroïde commune*) ne sont pas les mêmes entre les bases. Il est donc nécessaire de les normaliser.
 
 #### Correspondance adresse <> parcelle
 
 Les avis Kelrisks sont rendus sur des parcelles.
-Le problème est que la correspondance adresse <> parcelle n'est pas direct. Plusieurs  parcelles peuvent se trouver à la même adresse, une même parcelle peut se retrouver sur plusieurs adresses, les parcelles sont fusionnés, fragmentées dans le temps. Or le site Kelrisks propos une recherche à double entrée: par parcelle et par adresse. Lors d'une recherche par adresse, on est obligé de faire une projection sur la parcelle la plus proche, ce qui peut conduire à des faux négatifs. On veut avoir un match si l'utilisateur cherche une adresse (par exemple "4 boulevard Longchamp Marseille") et qu'un enregistrement possède une adresse similaire en base modulo de petites variations (par exemple "4 bd. Longchamp 13001 Marseille"). Cela nécessite de faire une comparaison textuelle "floue".
+Le problème est que la correspondance adresse <> parcelle n'est pas direct. Plusieurs  parcelles peuvent se trouver à la même adresse, une même parcelle peut se retrouver sur plusieurs adresses, les parcelles sont fusionnées ou découpées dans le temps. Or le site Kelrisks propos une recherche à double entrée: par *parcelle* et *par adresse*. Lors d'une recherche par adresse, on est obligé de faire une projection sur la parcelle la plus proche, ce qui peut conduire à des faux négatifs. On veut avoir un match si l'utilisateur cherche une adresse (par exemple *4 boulevard Longchamp Marseille*) et qu'un enregistrement possède une adresse similaire en base modulo de petites variations (par exemple *4 bd. Longchamp 13001 Marseille*). Cela nécessite de faire une comparaison textuelle "floue".
 
 
 ### Volumétrie des données cadastrales
 
-Pour un déploiement France entière l'intégralité des [données du cadastre](https://cadastre.data.gouv.fr/) doit être chargée en base. Cela représente quasiment
-100 millions d'enregistrements (~ 40 Go dans une table Postgres). Les bons indexs devront être crées pour
+Pour un déploiement France entière l'intégralité des [données du cadastre](https://cadastre.data.gouv.fr/) doit être chargée en base. Cela représente environ
+100 millions d'enregistrements (~ 40 Go dans une table Postgres). Les bons indexs devront être crées pour:
 
 * avoir des résultats en temps réel aux requêtes
 de l'utilisateur sur le site
@@ -77,8 +73,7 @@ Il faudra également faire attention à la consommation de la mémoire lors du c
 
 ### Traitement
 
-Au delà de l'automatisation des étapes de chargement
-des données, plusieurs types de traitements sont effectuées pour
+Plusieurs types de traitements sont effectués pour
 améliorer la qualité des données
 
 * géocodage en masse des adresses à l'aide de l'API [adresse.data.gouv.fr](https://adresse.data.gouv.fr/). Une librairie cliente en Python a été développée pour faciliter ce travail: [bulk-geocoding-python-client](https://github.com/MTES-MCT/bulk-geocoding-python-client).
@@ -92,11 +87,11 @@ améliorer la qualité des données
 Les tables finales contiennent toutes les champs suivants:
 
 * `adresse_id`: identifiant unique de l'adresse géocodée renvoyée par `adresse.data.gouv.fr`
-* `geog`: champs géographique de type MULTIPOLYGON représentant une ou
-plusieurs parcelles ou éentuellement le contour d'une commune
+* `geog`: champs géographique de type `MULTIPOLYGON` représentant une ou
+plusieurs parcelles ou éventuellement le contour d'une commune
 * `geog_precision`: précision de l'information géographique. Peut prendre les valeurs suivantes:
   * `parcel` : précision à la parcelle
-  * `housenumber`: précision au numéro de rue (une projection a été effectuée sur la parcelle la plus proche)
+  * `housenumber`: précision au numéro de rue (une projection est effectuée sur la parcelle la plus proche)
   * `municipality`: précision à la commune. Dans ce cas le champ `geog` représente le contour de la commune
 * `geog_source`: origine de l'information géographqique retenue (Cf nécessité de fusionner l'info quand plusieurs infos contradictoires). La valeur de ce champ dépend de la base concernée, on retrouvera notamment la valeur `geocodage` lorsque l'information provient du géocodage d'une adresse.
 
@@ -116,9 +111,7 @@ Les résultats relatifs à l' "amélioration" de la qualité des données sont p
 
 ### Airflow
 
-Airflow est une plateforme permettant de créer des workflows qui permettent d'automatiser les étapes de préparation des données. Il permet en outre de se connecter facilement à des bases de données via le système de `hook` et d'ajouter ses propres plugins. Le plugin [data_preparation_plugin](https://github.com/MTES-MCT/data-preparation-plugin) a été crée pour simplifier certaines tâches relatives à ce projet.
-
-L'utilisation d'Airflow permet de séparer chaque étape de préparation des données en différentes tâches avec création de tables intermédiaires qui peuvent être inspectées. On peut utiliser des recettes SQL, Python ou Bash.
+Airflow est une plateforme permettant de créer des workflows de préparation des données en séparant chaque étape dans différentes tâches. À chaque étape des tables intermédiaires sont crées et peuvent être inspectées. On peut utiliser des recettes SQL, Python ou Bash.
 
 Ci-dessous une partie du worflow Basias en exemple.
 
@@ -170,18 +163,18 @@ Visiter l'url `http://localhost:8080`, vous devez voir l'interface d'admin d'Air
 * prepare_basol
 * ...
 
-Cliquer sur pipeline, par exemple `prepare_commune` puis cliquer sur `Trigger Dag` pour lancer le worflow. Attention à [l'ordre d'exécution des pipelines](####Ordre-d'exécution-des-pipelines)
+Cliquer sur pipeline, par exemple `prepare_commune` puis cliquer sur `Trigger Dag` pour lancer le worflow.
 
 ![airflow-ui](./docs/airflow-ui.png)
 
 ### Config
 
-Les différentes valeurs du fichier de config sont bien documentés dans le fichier  [.env.model](.env.model). En local, il faut bien faire attention à configurer la valeur `DEPARTMENTS` sur un deux, départements seulement pour ne pas se retrouver à charger toute la table cadastrale.
+Les différentes valeurs du fichier de config sont documentées dans le fichier  [.env.model](.env.model). En local, il faut bien faire attention à configurer la valeur `DEPARTEMENTS` sur un ou deux départements seulement pour ne pas se retrouver à charger les données du cadastre de toute la France.
 
 ### Pipelines (DAGs)
 
 #### Liste des pipelines
-En langage Airflow, un pipeline est un DAG (Direct acyclic graph). Les pipelines suivants
+En langage Airflow, un pipeline est un DAG (direct acyclic graph). Les pipelines suivants
 ont été définis:
 
 * `prepare_commune` : permet de charger les contours géographiques des communes
@@ -197,13 +190,13 @@ ont été définis:
 #### Ordre d'exécution des pipelines
 L'ordre d'exécution des pipelines (DAGs) est important car certaines tâches nécessitent la
 présence de tables générées dans d'autres pipelines. Typiquement on s'assurera de faire tourner
-les pipelines dans cette ordre:
+les pipelines dans cet ordre:
 
 * `prepare_commune`
 * `prepare_cadastre`
 * `deploy_cadastre`
 
-puis dans n'importe quelle ordre et en parallèle
+puis dans n'importe quel ordre et en parallèle
 
 * `prepare_sis`
 * `prepare_s3ic`
@@ -215,7 +208,7 @@ puis
 
 * `deploy`
 
-Voir [espace disque](### Espace disque) pour comprendre pourquoi on déploie le cadastre avant de préparer les autres données
+Voir [espace disque](###Espace-disque) pour comprendre pourquoi on déploie le cadastre avant de préparer les autres données
 
 
 ### Lancement de tâches indépendantes
@@ -287,7 +280,7 @@ Un utilisateur dédié `circleci` a été crée sur le serveur pour donner
 accès à CircleCI en SSH.
 
 Les images Docker sont poussées sur le DockerHub beta.gouv
-(https://hub.docker.com/r/betagouv/kelrisks-airflow)[https://hub.docker.com/r/betagouv/kelrisks-airflow].
+[kelrisks-airflow](https://hub.docker.com/r/betagouv/kelrisks-airflow).
 Le compte DockerHub de Benoît Guigal est utilisé mais il est possible de demander
 accès à l'organisation beta.gouv sur Dockerhub dans le channel #incubateur-ops
 
@@ -297,7 +290,7 @@ Par économie de mémoire sur le serveur qui n'est pas très puissant, on veille
 à ne jamais faire tourner la preprod et la prod en même temps. De même on veillera
 à couper airflow lorsque les différents worflows sont terminés.
 
-bash
+
 ```
 # En étant loggué avec l'utilisateur circleci ou root
 
@@ -323,9 +316,9 @@ docker-compose down
 
 On veillera à ne pas donner accès au serveur Airflow en dehors de localhost
 en configurant la variable `AIRFLOW__WEBSERVER__WEB_SERVER_HOST=127.0.0.1`
-dans .env.
+dans le fichier `.env`.
 
-L'accès au serveur se fait en mettant en place un tunnel ssh.
+L'accès au serveur airflow se fait en mettant en place un tunnel ssh.
 
 
 ### Espace disque
@@ -341,9 +334,9 @@ Une manière de contourner le problème est de faire tourner `prepare_cadastre`
 puis `deploy_cadastre` puis de supprimer la table `etl.cadastre`.
 
 Les jointures avec la table cadastre effectués dans `prepare_s3ic`,
-`prepare_sis`, etc sont configurés pour utiliser la table `kelrisks.cadastre`.
+`prepare_sis`, etc sont configurées pour utiliser la table `kelrisks.cadastre`.
 
-Se faisant, on s'assure d'avoir au maximum 3 tables cadastres qui cohabitent.
+Se faisant, on s'assure d'avoir au maximum 3 tables cadastre qui cohabitent au maxiumum.
 
 ### Création des indexs de la table cadastre
 
@@ -353,15 +346,15 @@ La table cadastre nécessite la création de deux indexs en plus de l'index gis:
 * Un index sur le champ `code`
 
 La création de ces indexs est inclus dans le pipeline `prepare_cadastre`
-mais est commentée pour l'instant car rencontre une erreur airflow
+mais le code est commentée pour l'instant car rencontre une erreur airflow
 pour une raison inconnue. Il est donc nécessaire de créer ces indexs à
 la main (attention ça peut prendre un peu de temps) grâce aux scripts
 situés dans
 
-* preprod => /srv/kelrisks-data-preparation/dev/scripts
-* prod => /srv/kelrisks-data-preparation/master/scripts
+* preprod  `/srv/kelrisks-data-preparation/dev/scripts`
+* prod `/srv/kelrisks-data-preparation/master/scripts`
 
-bash
+
 ```
 # preprod
 
@@ -384,7 +377,6 @@ Le fonctionnement actuel de chargement des données cadastre à l'aide d'une rec
 
 Par mesure de sécurité, 4G du swap ont été ajouté au serveur. On peut vérifier cette valeur en faisant
 
-bash
 ```
 free -m
 ```
