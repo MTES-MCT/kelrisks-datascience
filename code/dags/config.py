@@ -24,6 +24,8 @@ else:
     departements = departements.split(",")
     DEPARTEMENTS = {k: constants.DEPARTEMENTS[k] for k in departements}
 
+KELRISKS_POSTGRES_USER = get_env_setting("KELRISKS_POSTGRES_USER")
+
 # Airflow connection defined as environement variables
 # See https://airflow.apache.org/howto/connection/index.html
 CONN_ID = "postgres_kelrisks"
