@@ -18,6 +18,8 @@ wait_for_port() {
 
 wait_for_port "Postgres" $AIRFLOW_POSTGRES_HOST "5432"
 
+# Supprime un précédent pid s'il existe
+rm -f $AIRFLOW_HOME/airflow-webserver.pid
+
 airflow initdb
 airflow scheduler & exec airflow webserver
-
