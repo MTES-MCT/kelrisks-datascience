@@ -19,7 +19,7 @@ On utilise les données au format geojson par commune plutôt
 que par département pour éviter de consommer trop de mémoire
 d'un coup. Il est possible de paralléliser le chargement
 de plusieurs départements en simultané en ajustant la variable
-d'environnement CADASTRE_CONCURRENCY
+d'environnement AIRFLOW__CORE__DAG_CONCURRENCY
 
 On ne charge pas les données directement dans la table cadastre.
 On utilise à la place une table temporaire dont le contenu est
