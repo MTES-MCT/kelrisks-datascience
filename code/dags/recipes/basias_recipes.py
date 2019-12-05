@@ -17,7 +17,15 @@ import transformers.basias_transformers as transformers
 
 def filter_departements():
     """
-    Keep only departements specified in config
+    Garde uniquement les enregistrements référencés dans les
+    départements configurés. Le numéro de département est
+    extrait du champ "indice_departemental"
+    Ex PAC8300506 => 83 (Var)
+
+    Le processus est répété pour les trois tables
+    - sites
+    - cadastre
+    - localisation
     """
 
     # input datasets
@@ -36,6 +44,7 @@ def filter_departements():
         (basias_localisation_source, basias_localisation_filtered),
         (basias_cadastre_source, basias_cadastre_filtered)]
 
+    # Regex pour extraire le numéro de dép PAC8300506 => 83 (Var)
     r = re.compile("[A-Z]{3}(\d{2})\d{4}")
 
     def keep_row(row):
@@ -50,7 +59,7 @@ def filter_departements():
 
     for (source, filtered) in datasets:
 
-        # write output schemas
+        # écrit le schéma de la table de sortie
         filtered.write_dtype([
             Column("id", BigInteger(), primary_key=True, autoincrement=True),
             *source.read_dtype(
@@ -64,8 +73,8 @@ def filter_departements():
 
 def prepare_sites():
     """
-    This recipe add a BigInteger field id and
-    keep only particular columns
+    Cette recette ajoute une clé primaire
+    et garde uniquement certaines colonnes
     """
 
     # input dataset
@@ -108,90 +117,16 @@ def prepare_sites():
             writer.write_row_dict(output_row)
 
 
-def geocode():
-
-    # input dataset
-    basias_localisation_filtered = Dataset(
-        "etl", "basias_localisation_filtered")
-
-    # output dataset
-    basias_localisation_geocoded = Dataset(
-        "etl", "basias_localisation_geocoded")
-
-    # write output schema
-    dtype = basias_localisation_filtered.read_dtype()
-
-    output_dtype = [
-        *dtype,
-        Column("geocoded_latitude", Float(precision=10)),
-        Column("geocoded_longitude", Float(precision=10)),
-        Column("geocoded_result_score", Float()),
-        Column("geocoded_result_type", String()),
-        Column("adresse_id", String())
-    ]
-
-    basias_localisation_geocoded.write_dtype(output_dtype)
-
-    with basias_localisation_geocoded.get_writer() as writer:
-
-        for df in basias_localisation_filtered.get_dataframes(chunksize=50):
-
-            df = df.replace({np.nan: None})
-
-            rows = df.to_dict(orient="records")
-
-            # numero is converted to float by pandas because it
-            # contains null values. Convert it back to integer
-            # Cf https://stackoverflow.com/questions/21287624/
-            # convert-pandas-column-containing-nans-to-dtype-int/21290084
-            for row in rows:
-                row["numero"] = int(row["numero"]) if row["numero"] else None
-                row["nom_voie"] = row["nom_voie"][:150] \
-                    if row["nom_voie"] \
-                    else None
-
-            payload = [{
-                "numero": row["numero"],
-                "bister": row["bister"],
-                "type_voie": row["type_voie"],
-                "nom_voie": row["nom_voie"],
-                "numero_insee": row["numero_insee"]
-            } for row in rows]
-
-            try:
-                geocoded = bulk_geocode(
-                    payload,
-                    columns=["numero", "bister", "type_voie", "nom_voie"],
-                    citycode="numero_insee")
-
-                zipped = list(zip(rows, geocoded))
-
-                for (row, geocodage) in zipped:
-                    latitude = geocodage["latitude"]
-                    row["geocoded_latitude"] = float(latitude) \
-                        if latitude else None
-                    longitude = geocodage["longitude"]
-                    row["geocoded_longitude"] = float(longitude) \
-                        if longitude else None
-                    result_score = geocodage["result_score"]
-                    row["geocoded_result_score"] = float(result_score) \
-                        if result_score else None
-                    row["geocoded_result_type"] = geocodage["result_type"]
-                    if geocodage["result_type"] == precisions.HOUSENUMBER \
-                            and float(geocodage["result_score"]) > 0.6:
-                        row["adresse_id"] = geocodage["result_id"]
-                    else:
-                        row["adresse_id"] = None
-                    writer.write_row_dict(row)
-            except Exception as e:
-                print(e)
-
-
 def merge_geog():
     """
-    Select best geography information
+    Sélectionne la meilleure information géographique
+    entre
+    - (x_lambert2_etendue, y_lambert2_etendue)
+    - (xl2_adresse, yl2_adresse)
+    - point géocodé
+
+    Ajoute la précision associée et la source de l'info
     """
-    pass
 
     # Input dataset
     basias_localisation_geocoded = Dataset(
@@ -265,14 +200,36 @@ def merge_geog():
 
 def intersect():
     """
-    Find the closest parcelle to the point and set it as
-    new geography
+    Projette les points géométriques sur la parcelle la plus proche.
+    On se limite à un voisinage d'environ 10m = 0.0001 degré.
+
+    Si aucune parcelle n'a été trouvée dans ce voisinage on conserve
+    le point d'origine.
+
+    La requête SQL Alchemy est équivalente à
+
+    SELECT *,
+        (SELECT geog
+            FROM kelrisks.cadastre AS c
+            WHERE st_dwithin(basias.geog, c.geog, 0.0001)
+            ORDER BY st_distance(basias.geog, c.geog)
+            LIMIT 1) nearest
+    FROM etl.basias_localisation_geog_merged basias
+
+    On utilise la table cadastre du schéma kelrisks
+    et non la table du schéma etl car il n'y a pas assez
+    de stockage sur le serveur pour avoir 4 tables cadastre
+    (preprod `etl`, preprod `kelrisks`, prod `etl`, prod `kelrisks`).
+    On est donc obligé de supprimer les tables cadastres
+    du schéma `etl` après les avoir copié dans le schéma `kelrisks`.
+    La table `etl.cadastre` n'existe donc pas forcément au moment
+    où ce DAG est executé.
     """
 
     # Input dataset
     basias_localisation_geog_merged = Dataset(
         "etl", "basias_localisation_geog_merged")
-    cadastre = Dataset("etl", "cadastre")
+    cadastre = Dataset("kelrisks", "cadastre")
 
     # Output dataset
     basias_localisation_intersected = Dataset(
@@ -309,6 +266,9 @@ def intersect():
 
 
 def join_localisation_cadastre():
+    """
+    Réalise une jointure entre la table localisation et la table cadastre
+    """
 
     # Input datasets
     basias_localisation_intersected = Dataset(
@@ -332,8 +292,8 @@ def join_localisation_cadastre():
         == BasiasLocalisationIntersected.indice_departemental
 
     q = session.query(
-            BasiasLocalisationIntersected,
-            BasiasCadastreMerged.geog) \
+        BasiasLocalisationIntersected,
+        BasiasCadastreMerged.geog) \
         .join(BasiasCadastreMerged, cond, isouter=True) \
         .all()
 
@@ -349,8 +309,11 @@ def join_localisation_cadastre():
 
 def parse_cadastre():
     """
-    This recipe parse cadastre information which is dirty
-    Exemple:
+    Cette recette permet d'extraire des parcelles
+    du champ "numero_de_parcelle" qui n'est pas
+    formaté correctement
+
+    Exemple de valeurs:
     ZA 128 et 146
     ? 131
     AH 575-574-43-224 etc
@@ -365,7 +328,6 @@ def parse_cadastre():
     # output dataset
     basias_cadastre_parsed = Dataset("etl", "basias_cadastre_parsed")
 
-    # join basias_cadastre with basias_sites to get numero_insee
     BasiasCadastreFiltered = basias_cadastre_filtered.reflect()
     BasiasLocalisationFiltered = basias_localisation_filtered.reflect()
 
@@ -381,8 +343,8 @@ def parse_cadastre():
 
     basias_cadastre_parsed.write_dtype(output_dtype)
 
-    # We need to join with basias_localiation_source because the table
-    # basias_cadastre_source does not contains insee code
+    # Fait une jointure avec la table basias_localiation_source pour
+    # récuperer le code insee
     q = session \
         .query(BasiasCadastreFiltered, BasiasLocalisationFiltered.numero_insee) \
         .join(
@@ -409,13 +371,22 @@ def parse_cadastre():
 
 def add_geog():
     """
-    join table with basol_cadastre_parsed with table cadastre
-    to retrive geog field and discard invalid parcelles
+    Cette recette réalise une jointure avec la table cadastre
+    pour nettoyer les parcelles invalide.
+
+    On utilise la table cadastre du schéma kelrisks
+    et non la table du schéma etl car il n'y a pas assez
+    de stockage sur le serveur pour avoir 4 tables cadastre
+    (preprod `etl`, preprod `kelrisks`, prod `etl`, prod `kelrisks`).
+    On est donc obligé de supprimer les tables cadastres
+    du schéma `etl` après les avoir copié dans le schéma `kelrisks`.
+    La table `etl.cadastre` n'existe donc pas forcément au moment
+    où ce DAG est executé.
     """
 
     # Input dataset
     basias_cadastre_parsed = Dataset("etl", "basias_cadastre_parsed")
-    cadastre = Dataset("etl", "cadastre")
+    cadastre = Dataset("kelrisks", "cadastre")
 
     # Output dataset
     basias_cadastre_with_geog = Dataset("etl", "basias_cadastre_with_geog")
@@ -454,7 +425,9 @@ def add_geog():
 
 
 def merge_cadastre_geog():
-    """ Merge parcelle for a same Basias site into a MULTIPOLYGON """
+    """
+    Aggrège les différentes parcelles d'un même
+    site dans un Multi Polygon """
 
     # Input dataset
     basias_cadastre_with_geog = Dataset("etl", "basias_cadastre_with_geog")
@@ -494,6 +467,9 @@ def merge_cadastre_geog():
 
 
 def join_sites_localisation():
+    """
+    Réalise une jointure entre la table sites et la table localisation
+    """
 
     # datasets to join
     basias_sites_prepared = Dataset("etl", "basias_sites_prepared")
@@ -541,8 +517,15 @@ def join_sites_localisation():
 
 def add_commune():
     """
-    set commune geog for all records where geog is not set with
-    a better precision
+    Ajoute le contour des communes comme nouvelle valeur pour
+    geog dans le cas où la précision est MUNICIPALITY
+
+    La reqête SqlAlchemy est équivalente à
+
+    SELECT *
+    FROM etl.basias_sites_localisation_joined A
+    LEFT JOIN etl.commune B
+    ON A.numero_insee == B.insee
     """
 
     # input dataset
@@ -581,44 +564,17 @@ def add_commune():
     session.close()
 
 
-def add_version():
-    """ Add a version column for compatibility with Spring """
-
-    # Input dataset
-    basias_sites_localisation_joined = Dataset(
-        "etl", "basias_sites_with_commune")
-
-    # Output dataset
-    basias_sites_with_version = Dataset(
-        "etl", "basias_sites_with_version")
-
-    basias_sites_with_version.write_dtype([
-        *basias_sites_localisation_joined.read_dtype(),
-        Column("version", Integer)
-    ])
-
-    with basias_sites_with_version.get_writer() as writer:
-        for row in basias_sites_localisation_joined.iter_rows():
-            writer.write_row_dict(row)
-
-
 def check():
-    """ Perform sanity checks on table """
-
-    # check we have same number of records
-    # than data filtered
-
+    """
+    Cette recette permet de faire des tests afin de vérifier que
+    la table générée est bien conforme. Dans un premier temps
+    on vérifie uniquement que le nombre d'enregistrements est
+    supérieur à 0
+    """
     basias = Dataset("etl", "basias")
     Basias = basias.reflect()
     session = basias.get_session()
     basias_count = session.query(Basias).count()
     session.close()
 
-    basias_filtered = Dataset("etl", "basias_sites_filtered")
-    BasiasFiltered = basias_filtered.reflect()
-    session = basias_filtered.get_session()
-    basias_filtered_count = session.query(BasiasFiltered).count()
-    session.close()
-
     assert basias_count > 0
-    assert basias_count == basias_filtered_count

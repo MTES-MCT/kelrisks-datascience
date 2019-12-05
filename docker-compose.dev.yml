@@ -1,9 +1,37 @@
 version: "3"
 
 services:
+  postgis:
+    build:
+      context: ./postgis
+      dockerfile: Dockerfile
+    environment:
+      - POSTGRES_DB=$KELRISKS_POSTGRES_DB
+      - POSTGRES_USER=$KELRISKS_POSTGRES_USER
+      - POSTGRES_PASSWORD=$KELRISKS_POSTGRES_PASSWORD
+      - AIRFLOW_POSTGRES_USER=$AIRFLOW_POSTGRES_USER
+      - AIRFLOW_POSTGRES_PASSWORD=$AIRFLOW_POSTGRES_PASSWORD
+      - AIRFLOW_POSTGRES_DB=$AIRFLOW_POSTGRES_DB
+    ports:
+      - 5432:5432
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
   airflow:
-    image: betagouv/kelrisks-airflow:$BRANCH-latest
-    network_mode: host
+    image: kelrisks-airflow
+    build:
+      context: ./code
+      dockerfile: Dockerfile
+    depends_on:
+      - postgis
+    ports:
+      - $AIRFLOW__WEBSERVER__WEB_SERVER_PORT:8080
+    volumes:
+      - ./code/dags:/usr/local/airflow/dags
+      - ./code/embulk:/usr/local/airflow/embulk
+      - ./code/templates:/usr/local/airflow/templates
+      - ./code/sql:/usr/local/airflow/sql
+      - ./code/logs:/usr/local/airflow
     environment:
       AIRFLOW__CORE__FERNET_KEY: $AIRFLOW__CORE__FERNET_KEY
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
@@ -13,8 +41,6 @@ services:
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "False"
       AIRFLOW__CORE__DAG_CONCURRENCY: $AIRFLOW__CORE__DAG_CONCURRENCY
       AIRFLOW_CONN_POSTGRES_KELRISKS: "postgresql+psycopg2://$KELRISKS_POSTGRES_USER:$KELRISKS_POSTGRES_PASSWORD@$KELRISKS_POSTGRES_HOST:$KELRISKS_POSTGRES_PORT/$KELRISKS_POSTGRES_DB"
-      AIRFLOW__WEBSERVER__WEB_SERVER_PORT: $AIRFLOW__WEBSERVER__WEB_SERVER_PORT
-      AIRFLOW__WEBSERVER__WEB_SERVER_HOST: $AIRFLOW__WEBSERVER__WEB_SERVER_HOST
       AIRFLOW__WEBSERVER__WORKERS: $AIRFLOW__WEBSERVER__WORKERS
       AIRFLOW_POSTGRES_HOST: $AIRFLOW_POSTGRES_HOST
       KELRISKS_POSTGRES_HOST: $KELRISKS_POSTGRES_HOST
@@ -24,3 +50,6 @@ services:
       KELRISKS_POSTGRES_DB: $KELRISKS_POSTGRES_DB
       KELRISKS_POSTGRES_SSL_ON: $KELRISKS_POSTGRES_SSL_ON
       DEPARTEMENTS: $DEPARTEMENTS
+
+volumes:
+  pg_data:

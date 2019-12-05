@@ -1,8 +1,53 @@
- version: 2
- jobs:
-   build:
-     docker:
-       - image: circleci/ruby:2.4.1
-     steps:
-       - checkout
-       - run: echo "A first hello"
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: docker
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run: |
+          docker build -t betagouv/kelrisks-airflow:$CIRCLE_SHA1 ./code
+          docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASSWORD
+          docker push betagouv/kelrisks-airflow:$CIRCLE_SHA1
+          docker tag betagouv/kelrisks-airflow:$CIRCLE_SHA1 betagouv/kelrisks-airflow:${CIRCLE_BRANCH}-latest
+          docker push betagouv/kelrisks-airflow:${CIRCLE_BRANCH}-latest
+  deploy:
+    machine:
+      enabled: true
+    parameters:
+      user:
+        type: env_var_name
+        default: SSH_USER
+      host:
+        type: env_var_name
+        default: SSH_HOST
+      branch:
+        type: env_var_name
+        default: CIRCLE_BRANCH
+    steps:
+      - checkout
+      - run:
+          command: |
+              scp docker-compose.yml ${<< parameters.user >>}@${<< parameters.host >>}:/srv/kelrisks-data-preparation/${<< parameters.branch >>}
+              ssh ${<< parameters.user >>}@${<< parameters.host >>} "cd /srv/kelrisks-data-preparation/${<< parameters.branch >>}
+              docker-compose pull"
+
+workflows:
+  build-and-deploy:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only:
+                - master
+                - dev
+      - deploy:
+          filters:
+            branches:
+              only:
+                - master
+                - dev
+          requires:
+            - build

@@ -1,9 +1,9 @@
 -- Schéma de la table cadastre principale
 -- et des différentes tables temporaires
 
-DROP TABLE IF EXISTS {{ params.table_name }};
+DROP TABLE IF EXISTS "{{params.schema}}"."{{ params.table }}";
 
-CREATE TABLE {{ params.table_name }} (
+CREATE TABLE {{params.schema}}.{{ params.table }} (
   id BIGSERIAL PRIMARY KEY,
   version INTEGER,
   code VARCHAR(255),
@@ -15,3 +15,5 @@ CREATE TABLE {{ params.table_name }} (
   type_geom VARCHAR(255),
   geog GEOMETRY(GEOMETRY, 4326)
 );
+
+CREATE INDEX {{ params.table }}_geog_idx ON "etl"."{{ params.table }}" USING GIST (geog);

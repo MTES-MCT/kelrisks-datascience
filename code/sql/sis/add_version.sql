@@ -4,12 +4,12 @@
 -- La valeur de la colonne version est incrémenté
 -- à 1 par défaut
 
-DROP TABLE IF EXISTS etl.s3ic_with_version;
+DROP TABLE IF EXISTS etl.sis_with_version;
 
-CREATE TABLE etl.s3ic_with_version (
-  LIKE etl.s3ic_with_commune INCLUDING indexes,
+CREATE TABLE etl.sis_with_version (
+  LIKE etl.sis_with_precision INCLUDING indexes,
   version INTEGER
 );
 
-INSERT INTO etl.s3ic_with_version
-SELECT *, 1 FROM etl.s3ic_with_commune;
+INSERT INTO etl.sis_with_version
+SELECT *, 1 FROM etl.sis_with_precision;

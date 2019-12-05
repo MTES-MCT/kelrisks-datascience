@@ -5,7 +5,7 @@
 DROP TABLE IF EXISTS etl.s3ic_idf_with_geom;
 
 CREATE TABLE etl.s3ic_idf_with_geom (
-  LIKE etl.s3ic_idf_source,
+  LIKE etl.s3ic_idf_source INCLUDING indexes,
   geog GEOMETRY(GEOMETRY, 4326)
 );
 

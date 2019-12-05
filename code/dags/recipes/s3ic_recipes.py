@@ -309,7 +309,7 @@ def add_parcelle():
                   .limit(1) \
                   .label("nearest")
 
-    q = session.query(S3icGeogMerged, stmt).all()
+    q = session.query(S3icGeogMerged, stmt).yield_per(500)
 
     with s3ic_with_parcelle.get_writer() as writer:
         for (row, cadastre_geog) in q:

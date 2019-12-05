@@ -19,7 +19,7 @@ On utilise les données au format geojson par commune plutôt
 que par département pour éviter de consommer trop de mémoire
 d'un coup. Il est possible de paralléliser le chargement
 de plusieurs départements en simultané en ajustant la variable
-d'environnement CADASTRE_CONCURRENCY
+d'environnement AIRFLOW__CORE__DAG_CONCURRENCY
 
 On ne charge pas les données directement dans la table cadastre.
 On utilise à la place une table temporaire dont le contenu est
@@ -40,7 +40,7 @@ from airflow.operators.postgres_operator import PostgresOperator
 
 import helpers
 import recipes.cadastre_recipes as recipes
-from config import CONN_ID, DEPARTEMENTS, CADASTRE_CONCURRENCY, SQL_DIR
+from config import CONN_ID, DEPARTEMENTS, SQL_DIR
 
 default_args = helpers.default_args({"start_date": datetime(2019, 6, 11, 5)})
 
@@ -48,8 +48,7 @@ default_args = helpers.default_args({"start_date": datetime(2019, 6, 11, 5)})
 with DAG("prepare_cadastre",
          default_args=default_args,
          schedule_interval=None,
-         template_searchpath=os.path.join(SQL_DIR, "cadastre"),
-         concurrency=CADASTRE_CONCURRENCY) as dag:
+         template_searchpath=os.path.join(SQL_DIR, "cadastre")) as dag:
 
     start = DummyOperator(task_id="start")
 
@@ -57,13 +56,13 @@ with DAG("prepare_cadastre",
         task_id="create_cadastre_table",
         sql="cadastre.sql",
         postgres_conn_id=CONN_ID,
-        params={"table_name": "etl.cadastre"})
+        params={"schema": "etl", "table": "cadastre"})
 
     load_tasks = []
 
     for departement in DEPARTEMENTS:
 
-        temp_table = "\"etl\".\"cadastre_{dep}_temp\"".format(
+        temp_table = "cadastre_{dep}_temp".format(
             dep=departement)
 
         start_dep = DummyOperator(
@@ -75,7 +74,7 @@ with DAG("prepare_cadastre",
             task_id="create_temp_{dep}".format(dep=departement),
             sql="cadastre.sql",
             postgres_conn_id=CONN_ID,
-            params={"table_name": temp_table})
+            params={"schema": "etl", "table": temp_table})
 
         load = PythonOperator(
             task_id="load_{dep}".format(dep=departement),
@@ -87,12 +86,12 @@ with DAG("prepare_cadastre",
             sql="copy_temp.sql",
             postgres_conn_id=CONN_ID,
             params={
-                "source": temp_table,
+                "source": "etl.{table}".format(table=temp_table),
                 "destination": "etl.cadastre"})
 
         delete_temp = PostgresOperator(
             task_id="delete_temp_{dep}".format(dep=departement),
-            sql="DROP TABLE IF EXISTS {table_name}".format(
+            sql="DROP TABLE IF EXISTS etl.{table_name}".format(
                 table_name=temp_table),
             postgres_conn_id=CONN_ID)
 
