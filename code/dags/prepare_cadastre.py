@@ -56,13 +56,13 @@ with DAG("prepare_cadastre",
         task_id="create_cadastre_table",
         sql="cadastre.sql",
         postgres_conn_id=CONN_ID,
-        params={"table_name": "etl.cadastre"})
+        params={"schema": "etl", "table": "cadastre"})
 
     load_tasks = []
 
     for departement in DEPARTEMENTS:
 
-        temp_table = "\"etl\".\"cadastre_{dep}_temp\"".format(
+        temp_table = "cadastre_{dep}_temp".format(
             dep=departement)
 
         start_dep = DummyOperator(
@@ -74,7 +74,7 @@ with DAG("prepare_cadastre",
             task_id="create_temp_{dep}".format(dep=departement),
             sql="cadastre.sql",
             postgres_conn_id=CONN_ID,
-            params={"table_name": temp_table})
+            params={"schema": "etl", "table": temp_table})
 
         load = PythonOperator(
             task_id="load_{dep}".format(dep=departement),
@@ -86,12 +86,12 @@ with DAG("prepare_cadastre",
             sql="copy_temp.sql",
             postgres_conn_id=CONN_ID,
             params={
-                "source": temp_table,
+                "source": "etl.{table}".format(table=temp_table),
                 "destination": "etl.cadastre"})
 
         delete_temp = PostgresOperator(
             task_id="delete_temp_{dep}".format(dep=departement),
-            sql="DROP TABLE IF EXISTS {table_name}".format(
+            sql="DROP TABLE IF EXISTS etl.{table_name}".format(
                 table_name=temp_table),
             postgres_conn_id=CONN_ID)
 
