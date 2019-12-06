@@ -86,13 +86,13 @@ with DAG("prepare_cadastre",
             sql="copy_temp.sql",
             postgres_conn_id=CONN_ID,
             params={
-                "source": "etl.{table}".format(table=temp_table),
+                "source": "etl.\"{table}\"".format(table=temp_table),
                 "destination": "etl.cadastre"})
 
         delete_temp = PostgresOperator(
             task_id="delete_temp_{dep}".format(dep=departement),
-            sql="DROP TABLE IF EXISTS etl.{table_name}".format(
-                table_name=temp_table),
+            sql="DROP TABLE IF EXISTS etl.\"{table}\"".format(
+                table=temp_table),
             postgres_conn_id=CONN_ID)
 
         start_dep >> create_temp >> load >> copy >> delete_temp
