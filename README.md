@@ -3,39 +3,39 @@
 Pipelines de préparation des données (cadastre, BASOL, BASIAS, SIS et S3IC) pour l'application
 Kelrisks
 
-* **[Le projet](##le-projet)**
-* **[Les données](##les-données)**
-  * **[Source de données](###Source-de-données)**
-  * **[Qualité des données](###Qualité-des-données)**
-    * **[Existence et précision du géo-référencement](####Existence-et-précision-du-géo-référencement)**
-    * **[Format hétérogène](####Format-hétérogène)**
-    * **[Correspondance adresse <> parcelle](####Correspondance-adresse-<>-parcelle)**
-  * **[Volumétrie des données cadastrales](###Volumétrie-des-données-cadastrales)**
-* **[Solution et résulats](##Solution-et-résulats)**
-  * **[Traitement](###Traitement)**
-  * **[Format des données finales](###Format-des-données-finales)**
-  * **[Résultats](###Résultats)**
-* **[Pile logiciel](##Pile-logiciel)**
-  * **[Airflow](###Airflow)**
-* **[Développement](##Développement)**
-  * **[Pré-requis](###Prérequis)**
-  * **[Mise en route](###Mise-en-route)**
-  * **[Config](###Config)**
-  * **[Pipelines (DAGs)](###Pipelines-(DAGs))**
-    * **[Liste des pipelines](####Liste-des-pipelines)**
-    * **[Ordre d'exécution des pipelines](####Ordre-d'exécution-des-pipelines)**
-    * **[Lancement de tâches indépendantes](####Lancement-de-tâches-indépendantes)**
-* **[Déploiement en préprod et prod](##Déploiement-en-préprod-et-prod)**
-  * **[Serveur](###Serveur)**
-  * **[Environnement](###Environnement)**
-  * **[CircleCI](###CircleCI)**
-  * **[Administration](###Administration)**
-  * **[Sécurité](###Sécurité)**
-  * **[Espace disque](###Espace-disque)**
-  * **[Création des indexs de la table cadastre](###Création-des-indexs-de-la-table-cadastre)**
-  * **[Mémoire](###Mémoire)**
-* **[Pistes d'amélioration](##Pistes-d'-amélioration)**
-* **[Licence](##Licence)**
+* **[Le projet](#le-projet)**
+* **[Les données](#les-données)**
+  * **[Source de données](#source-de-données)**
+  * **[Qualité des données](#qualité-des-données)**
+    * **[Existence et précision du géo-référencement](#existence-et-précision-du-géo-référencement)**
+    * **[Format hétérogène](fFormat-hétérogène)**
+    * **[Correspondance adresse <> parcelle](#correspondance-adresse--parcelle)**
+  * **[Volumétrie des données cadastrales](#volumétrie-des-données-cadastrales)**
+* **[Solution et résulats](#solution-et-résulats)**
+  * **[Traitement](#traitement)**
+  * **[Format des données finales](#format-des-données-finales)**
+  * **[Résultats](#résultats)**
+* **[Pile logiciels](##pile-logiciels)**
+  * **[Airflow](#airflow)**
+* **[Développement](#développement)**
+  * **[Pré-requis](#prérequis)**
+  * **[Mise en route](#mise-en-route)**
+  * **[Config](#config)**
+  * **[Pipelines (DAGs)](#pipelines-dags))**
+    * **[Liste des pipelines](#liste-des-pipelines)**
+    * **[Ordre d'exécution des pipelines](#ordre-dexécution-des-pipelines)**
+    * **[Lancement de tâches indépendantes](#lancement-de-tâches-indépendantes)**
+* **[Déploiement en préprod et prod](##déploiement-en-préprod-et-prod)**
+  * **[Serveur](#serveur)**
+  * **[Environnement](#environnement)**
+  * **[CircleCI](#circleci)**
+  * **[Administration](#administration)**
+  * **[Sécurité](#sécurité)**
+  * **[Espace disque](#espace-disque)**
+  * **[Création des indexs de la table cadastre](#création-des-indexs-de-la-table-cadastre)**
+  * **[Mémoire](#mémoire)**
+* **[Pistes d'amélioration](#pistes-damélioration)**
+* **[Licence](##licence)**
 
 
 
@@ -135,7 +135,7 @@ plusieurs parcelles ou éventuellement le contour d'une commune
 
 Les résultats relatifs à l' "amélioration" de la qualité des données sont publiés dans le fichier [qualite.md](./qualite.md)
 
-## Pile logiciel
+## Pile logiciels
 
 ### Liste des composants principaux
 
