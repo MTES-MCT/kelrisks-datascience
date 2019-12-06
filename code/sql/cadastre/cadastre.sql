@@ -3,7 +3,7 @@
 
 DROP TABLE IF EXISTS "{{params.schema}}"."{{ params.table }}";
 
-CREATE TABLE {{params.schema}}.{{ params.table }} (
+CREATE TABLE "{{ params.schema }}"."{{ params.table }}" (
   id BIGSERIAL PRIMARY KEY,
   version INTEGER,
   code VARCHAR(255),
@@ -16,4 +16,4 @@ CREATE TABLE {{params.schema}}.{{ params.table }} (
   geog GEOMETRY(GEOMETRY, 4326)
 );
 
-CREATE INDEX {{ params.table }}_geog_idx ON "etl"."{{ params.table }}" USING GIST (geog);
+CREATE INDEX {{ params.table }}_geog_idx ON "{{ params.schema }}"."{{ params.table }}" USING GIST (geog);
