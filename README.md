@@ -3,6 +3,42 @@
 Pipelines de préparation des données (cadastre, BASOL, BASIAS, SIS et S3IC) pour l'application
 Kelrisks
 
+* **[Le projet](##le-projet)**
+* **[Les données](##les-données)**
+  * **[Source de données](###Source-de-données)**
+  * **[Qualité des données](###Qualité-des-données)**
+    * **[Existence et précision du géo-référencement](####Existence-et-précision-du-géo-référencement)**
+    * **[Format hétérogène](####Format-hétérogène)**
+    * **[Correspondance adresse <> parcelle](####Correspondance-adresse-<>-parcelle)**
+  * **[Volumétrie des données cadastrales](###Volumétrie-des-données-cadastrales)**
+* **[Solution et résulats](##Solution-et-résulats)**
+  * **[Traitement](###Traitement)**
+  * **[Format des données finales](###Format-des-données-finales)**
+  * **[Résultats](###Résultats)**
+* **[Pile logiciel](##Pile-logiciel)**
+  * **[Airflow](###Airflow)**
+* **[Développement](##Développement)**
+  * **[Pré-requis](###Prérequis)**
+  * **[Mise en route](###Mise-en-route)**
+  * **[Config](###Config)**
+  * **[Pipelines (DAGs)](###Pipelines-(DAGs))**
+    * **[Liste des pipelines](####Liste-des-pipelines)**
+    * **[Ordre d'exécution des pipelines](####Ordre-d'exécution-des-pipelines)**
+    * **[Lancement de tâches indépendantes](####Lancement-de-tâches-indépendantes)**
+* **[Déploiement en préprod et prod](##Déploiement-en-préprod-et-prod)**
+  * **[Serveur](###Serveur)**
+  * **[Environnement](###Environnement)**
+  * **[CircleCI](###CircleCI)**
+  * **[Administration](###Administration)**
+  * **[Sécurité](###Sécurité)**
+  * **[Espace disque](###Espace-disque)**
+  * **[Création des indexs de la table cadastre](###Création-des-indexs-de-la-table-cadastre)**
+  * **[Mémoire](###Mémoire)**
+* **[Pistes d'amélioration](##Pistes-d'-amélioration)**
+* **[Licence](##Licence)**
+
+
+
 ## Le projet
 
 Kelrisks est une startup d'état du MTES qui permet d'évaluer simplement et rapidement le risque
@@ -111,7 +147,7 @@ Les résultats relatifs à l' "amélioration" de la qualité des données sont p
 
 ### Airflow
 
-Airflow est une plateforme permettant de créer des workflows de préparation des données en séparant chaque étape dans différentes tâches. À chaque étape des tables intermédiaires sont crées et peuvent être inspectées. On peut utiliser des recettes SQL, Python ou Bash.
+Airflow est une plateforme permettant de créer des workflows de préparation des données en séparant chaque étape dans différentes tâches. À chaque étape des tables intermédiaires sont créees et peuvent être inspectées. On peut utiliser des recettes SQL, Python ou Bash.
 
 Ci-dessous une partie du worflow Basias en exemple.
 
@@ -152,7 +188,7 @@ ou
 
 ```
 docker-compose -f docker-compose.dev.airflow-only.yml build
-docker-compose -f docker-compose.dev.airflow-only.yml
+docker-compose -f docker-compose.dev.airflow-only.yml up
 ```
 
 Visiter l'url `http://localhost:8080`, vous devez voir l'interface d'admin d'Airflow avec différents pipelines de données:
@@ -307,8 +343,16 @@ cd /srv/kelrisks-data-preparation/dev
 docker-compose down
 
 # Stopper airflow en prod
-cd /srv/kelrisks-data-preparation/dev
+cd /srv/kelrisks-data-preparation/master
 docker-compose down
+
+# Voir les logs en preprod
+cd /srv/kelrisks-data-preparation/dev
+docker-compose logs
+
+# Voir les logs en prod
+cd /srv/kelrisks-data-preparation/master
+docker-compose logs
 ```
 
 
@@ -383,7 +427,15 @@ free -m
 
 Le swap est rendu permanent en ajoutant une ligne au fichier `/etc/fstab`
 
-## License
+## Pistes d'amélioration
+
+* Utilisation de `ogr2ogr`pour charger les données du cadastre (moins de consommation mémoire probablement)
+* Croisement avec geosirene
+* Certains sites sont présents dans différentes bases, par
+exemple Basias et Basol. On pourrait faire un croisement entre les bases pour récupérer la meilleure info géographique.
+* Géocoder avec OSM BANO et POI. Cf ce qui est fait [ici](https://github.com/cquest/geocodage-spd/tree/master/insee-sirene)
+
+## Licence
 
 [GNU General Public License v3.0](./LICENSE)
 
